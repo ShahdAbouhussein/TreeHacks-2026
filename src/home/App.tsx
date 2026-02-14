@@ -1,17 +1,11 @@
+import { useMemo } from "react";
 import { HomePage } from "./features/home/HomePage";
+import type { CalendarEvent } from "../lib/useEvents";
+import { useTasks } from "../lib/useTasks";
 
-// Placeholder data — replace with real props/state
-const PLACEHOLDER_DAYS = [
-  { date: 8, label: "Sun" },
-  { date: 9, label: "Mon" },
-  { date: 10, label: "Tues" },
-  { date: 11, label: "Wed", isSelected: true },
-  { date: 12, label: "Thurs" },
-  { date: 13, label: "Fri" },
-  { date: 14, label: "Sat" },
-];
+const DAY_LABELS = ["Sun", "Mon", "Tues", "Wed", "Thurs", "Fri", "Sat"];
 
-const PLACEHOLDER_TIME_SLOTS = [
+const TIME_SLOTS = [
   { hour: 9, label: "9 AM" },
   { hour: 10, label: "10 AM" },
   { hour: 11, label: "11 AM" },
@@ -22,34 +16,95 @@ const PLACEHOLDER_TIME_SLOTS = [
   { hour: 16, label: "4 PM" },
 ];
 
-const PLACEHOLDER_EVENTS = [
-  { id: "1", title: "CS 109 Lecture", timeRange: "2:30 - 4:30 PM", startHour: 9, durationHours: 1 },
-  { id: "2", title: "Lunch with Ana", timeRange: "2:30 - 4:30 PM", startHour: 11.5, durationHours: 1 },
-  { id: "3", title: "Lunch with Ana", timeRange: "2:30 - 4:30 PM", startHour: 15, durationHours: 1 },
-];
+function formatTime(date: Date): string {
+  const h = date.getHours();
+  const m = date.getMinutes();
+  const suffix = h >= 12 ? "PM" : "AM";
+  const hour12 = h % 12 || 12;
+  return m === 0 ? `${hour12} ${suffix}` : `${hour12}:${m.toString().padStart(2, "0")} ${suffix}`;
+}
 
-const PLACEHOLDER_TASKS = [
-  { id: "1", title: "Task Analysis 1.1", dueDate: "Due 09/12/2026", description: "Lorem ipsum", tag: "Personal" },
-  { id: "2", title: "Task Analysis 1.1", dueDate: "Due 09/12/2026", description: "Lorem ipsum", tag: "Personal" },
-];
+function getCurrentWeekDays(): { date: number; label: string; isSelected?: boolean }[] {
+  const now = new Date();
+  const today = now.getDate();
+  const dayOfWeek = now.getDay(); // 0 = Sunday
+  const startOfWeek = new Date(now);
+  startOfWeek.setDate(today - dayOfWeek);
 
-const PLACEHOLDER_NAV = [
-  { id: "home", label: "Home", icon: "home" as const, isActive: true },
-  { id: "chat", label: "Chat", icon: "chat" as const },
-  { id: "calendar", label: "Calendar", icon: "calendar" as const },
-  { id: "profile", label: "Profile", icon: "profile" as const },
-];
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(startOfWeek);
+    d.setDate(startOfWeek.getDate() + i);
+    return {
+      date: d.getDate(),
+      label: DAY_LABELS[i],
+      isSelected: d.getDate() === today && d.getMonth() === now.getMonth(),
+    };
+  });
+}
 
-function App() {
+interface AppProps {
+  onSeeAllTasks?: () => void;
+  onNavPress?: (id: string) => void;
+  events?: CalendarEvent[];
+  userId?: string;
+  userName?: string;
+}
+
+function App({ onSeeAllTasks, onNavPress, events = [], userId, userName }: AppProps) {
+  const days = useMemo(() => getCurrentWeekDays(), []);
+  const { tasks: firestoreTasks } = useTasks(userId);
+
+  const todayEvents = useMemo(() => {
+    const now = new Date();
+    const todayStr = `${now.getFullYear()}-${now.getMonth()}-${now.getDate()}`;
+
+    return events
+      .filter((e) => {
+        const s = e.start;
+        return `${s.getFullYear()}-${s.getMonth()}-${s.getDate()}` === todayStr && !e.allDay;
+      })
+      .map((e) => ({
+        id: e.id,
+        title: e.title,
+        timeRange: `${formatTime(e.start)} - ${formatTime(e.end)}`,
+        startHour: e.start.getHours() + e.start.getMinutes() / 60,
+        durationHours: Math.max(
+          (e.end.getTime() - e.start.getTime()) / (1000 * 60 * 60),
+          0.5
+        ),
+      }));
+  }, [events]);
+
+  const homeTasks = useMemo(
+    () =>
+      firestoreTasks.map((t) => ({
+        id: t.id,
+        title: t.title,
+        dueDate: t.dueDate,
+        description: t.description,
+        tag: t.tag,
+      })),
+    [firestoreTasks]
+  );
+
+  const navItems = [
+    { id: "home", label: "Home", icon: "home" as const, isActive: true },
+    { id: "chat", label: "Chat", icon: "chat" as const },
+    { id: "calendar", label: "Calendar", icon: "calendar" as const },
+    { id: "profile", label: "Profile", icon: "profile" as const },
+  ];
+
   return (
     <HomePage
       greeting="Welcome back,"
-      userName="Carmah"
-      days={PLACEHOLDER_DAYS}
-      timeSlots={PLACEHOLDER_TIME_SLOTS}
-      events={PLACEHOLDER_EVENTS}
-      tasks={PLACEHOLDER_TASKS}
-      navItems={PLACEHOLDER_NAV}
+      userName={userName || "there"}
+      days={days}
+      timeSlots={TIME_SLOTS}
+      events={todayEvents}
+      tasks={homeTasks}
+      navItems={navItems}
+      onSeeAllTasks={onSeeAllTasks}
+      onNavPress={onNavPress}
     />
   );
 }
