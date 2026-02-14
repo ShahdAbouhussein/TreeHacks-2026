@@ -12,6 +12,7 @@ import { BottomNav } from "./home/features/home/components/BottomNav";
 import TasksPage from "./home/features/tasks/TasksPage";
 import CalendarPage from "./home/features/calendar/CalendarPage";
 import { ChatBar } from "./home/features/tasks/ChatBar";
+import Chat from "./pages/Chat";
 import { parseIcsFile } from "./lib/icsParser";
 import { importEventsToFirestore } from "./lib/importEvents";
 import { useEvents } from "./lib/useEvents";
@@ -35,10 +36,6 @@ const ArrowButton = ({ onClick, disabled }: { onClick: () => void; disabled?: bo
     </svg>
   </button>
 );
-
-const Chat = () => <div>Chat coming soon.</div>;
-import Chat from "./pages/Chat";
-const Calendar = () => <div>Calendar coming soon.</div>;
 
 export default function App() {
   const [user, setUser] = useState<any>(null);
