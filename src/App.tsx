@@ -37,6 +37,8 @@ const ArrowButton = ({ onClick, disabled }: { onClick: () => void; disabled?: bo
 );
 
 const Chat = () => <div>Chat coming soon.</div>;
+import Chat from "./pages/Chat";
+const Calendar = () => <div>Calendar coming soon.</div>;
 
 export default function App() {
   const [user, setUser] = useState<any>(null);
