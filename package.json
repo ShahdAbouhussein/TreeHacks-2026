@@ -11,12 +11,15 @@
   },
   "dependencies": {
     "firebase": "^12.9.0",
+    "framer-motion": "^12.34.0",
+    "ical": "^0.8.0",
     "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "react-dom": "^19.2.0",
+    "react-use-measure": "^2.1.7"
   },
   "devDependencies": {
-    "@tailwindcss/vite": "^4.1.18",
     "@eslint/js": "^9.39.1",
+    "@tailwindcss/vite": "^4.1.18",
     "@types/node": "^24.10.1",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
