@@ -44,7 +44,7 @@ export default function Chat() {
     formData.append("audio", audioBlob);
 
     try {
-      const res = await fetch("http://localhost:5001/api/transcribe", {
+      const res = await fetch("api/transcribe", {
         method: "POST",
         body: formData,
       });
