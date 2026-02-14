@@ -61,7 +61,7 @@ export function BottomNav({ items, onItemPress }: BottomNavProps) {
   return (
     <nav
       aria-label="Main navigation"
-      className="fixed bottom-6 left-1/2 flex -translate-x-1/2 items-center gap-xs rounded-full bg-surface-alt px-sm py-sm shadow-subtle"
+      className="fixed bottom-6 left-1/2 z-20 flex -translate-x-1/2 items-center gap-xs rounded-full bg-surface-alt px-sm py-sm shadow-subtle"
     >
       {items.map((item) => (
         <button

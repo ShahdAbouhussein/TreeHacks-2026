@@ -6,7 +6,7 @@
   --font-sans: 'Instrument Sans', sans-serif;
 
   /* ── Surfaces ── */
-  --color-background: #FAFAFA;
+  --color-background: #F7F7F8;
   --color-surface: #FFFFFF;
   --color-surface-elevated: rgba(255, 255, 255, 0.12);
   --color-surface-alt: #F7F7F7;
@@ -19,10 +19,10 @@
   --color-text-strong: #1C1C1E;
 
   /* ── Accent ── */
-  --color-accent: #1C1C1E;
-  --color-accent-soft: #1C1C1E;
-  --color-accent-dark: #1C1C1E;
-  --color-accent-deeper: #1C1C1E;
+  --color-accent: #6F8F7A;
+  --color-accent-soft: #6F8F7A;
+  --color-accent-dark: #5A7A65;
+  --color-accent-deeper: #4D6B56;
   --color-icon-primary: #1F1A15;
 
   /* ── Semantic ── */
@@ -64,6 +64,20 @@
 
   /* ── Shadows ── */
   --shadow-subtle: 0 2px 8px rgba(0, 0, 0, 0.05);
+
+  /* ── Animations ── */
+  --animate-fade-in: fade-in 0.2s ease-out;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 html,
@@ -73,7 +87,7 @@ body {
   font-size: 17px;
   line-height: 24px;
   color: var(--color-text-primary);
-  background-color: #FAFAFA;
+  background-color: #F7F7F8;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
