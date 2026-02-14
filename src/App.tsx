@@ -1,35 +1,113 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { useEffect, useState } from "react";
+import { auth, db } from "./lib/firebase";
+import {
+  onAuthStateChanged,
+  signOut,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+} from "firebase/auth";
+import { doc, setDoc } from "firebase/firestore";
 
-function App() {
-  const [count, setCount] = useState(0)
+export default function App() {
+  const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [isLogin, setIsLogin] = useState(false);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const handleAuth = async () => {
+    try {
+      if (isLogin) {
+        // SIGN IN
+        await signInWithEmailAndPassword(auth, email, password);
+        console.log("Signed in");
+      } else {
+        // SIGN UP
+        const userCredential = await createUserWithEmailAndPassword(
+          auth,
+          email,
+          password
+        );
+
+        const user = userCredential.user;
+
+        await setDoc(doc(db, "users", user.uid), {
+          email: user.email,
+          createdAt: new Date(),
+        });
+
+        console.log("User + Firestore doc created");
+      }
+    } catch (error: any) {
+      console.error("Auth error:", error.code);
+    }
+  };
+
+  const testProtectedRoute = async () => {
+    try {
+      const token = await auth.currentUser?.getIdToken();
+
+      const res = await fetch("http://localhost:5001/api/protected", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await res.json();
+      console.log("Protected response:", data);
+    } catch (error) {
+      console.error("Protected route error:", error);
+    }
+  };
+
+  if (loading) return <div>Loading...</div>;
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
-}
+    <div style={{ padding: 40 }}>
+      {user ? (
+        <>
+          <h2>Logged in as {user.email}</h2>
+          <button onClick={() => signOut(auth)}>Log Out</button>
+        </>
+      ) : (
+        <>
+          <h1>{isLogin ? "Sign In" : "Sign Up"}</h1>
 
-export default App
+          <input
+            placeholder="email"
+            onChange={(e) => setEmail(e.target.value)}
+          />
+
+          <input
+            placeholder="password"
+            type="password"
+            onChange={(e) => setPassword(e.target.value)}
+          />
+
+          <button onClick={handleAuth}>
+            {isLogin ? "Sign In" : "Sign Up"}
+          </button>
+
+          <p
+            style={{ cursor: "pointer", marginTop: 10 }}
+            onClick={() => setIsLogin(!isLogin)}
+          >
+            {isLogin
+              ? "Don't have an account? Sign Up"
+              : "Already have an account? Sign In"}
+          </p>
+        </>
+      )}
+    </div>
+  );
+
+}
