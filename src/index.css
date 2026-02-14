@@ -1,68 +1,79 @@
-:root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
+@import "tailwindcss";
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+@theme {
+  /* ── Fonts ── */
+  --font-serif: 'Libre Baskerville', serif;
+  --font-sans: 'Instrument Sans', sans-serif;
 
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  /* ── Surfaces ── */
+  --color-background: #FAFAFA;
+  --color-surface: #FFFFFF;
+  --color-surface-elevated: rgba(255, 255, 255, 0.12);
+  --color-surface-alt: #F7F7F7;
+  --color-subtle-fill: rgba(28, 28, 30, 0.04);
+
+  /* ── Text ── */
+  --color-text-primary: #111111;
+  --color-text-secondary: #6B7280;
+  --color-text-tertiary: #9CA3AF;
+  --color-text-strong: #1C1C1E;
+
+  /* ── Accent ── */
+  --color-accent: #1C1C1E;
+  --color-accent-soft: #1C1C1E;
+  --color-accent-dark: #1C1C1E;
+  --color-accent-deeper: #1C1C1E;
+  --color-icon-primary: #1F1A15;
+
+  /* ── Semantic ── */
+  --color-event-bg: #F1F1F0;
+  --color-border: rgba(0, 0, 0, 0.08);
+  --color-tag-bg: rgba(28, 28, 30, 0.06);
+  --color-divider: rgba(0, 0, 0, 0.08);
+
+  /* ── Gray scale ── */
+  --color-gray-25: #fcfcfd;
+  --color-gray-50: #f9fafb;
+  --color-gray-100: #f2f4f7;
+  --color-gray-200: #eaecf0;
+  --color-gray-300: #d0d5dd;
+  --color-gray-400: #98a2b3;
+  --color-gray-500: #667085;
+  --color-gray-600: #475467;
+  --color-gray-700: #344054;
+  --color-gray-800: #182230;
+  --color-gray-900: #101828;
+  --color-gray-950: #0c111d;
+
+  /* ── Spacing (4pt grid, Apple HIG) ── */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 12px;
+  --spacing-lg: 16px;
+  --spacing-xl: 20px;
+  --spacing-2xl: 24px;
+  --spacing-3xl: 32px;
+  --spacing-4xl: 40px;
+  --spacing-5xl: 48px;
+  --spacing-6xl: 64px;
+
+  /* ── Corner Radius ── */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+
+  /* ── Shadows ── */
+  --shadow-subtle: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
-}
-
+html,
 body {
   margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
-}
-
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
-}
-
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
-}
-
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
+  font-family: var(--font-sans);
+  font-size: 17px;
+  line-height: 24px;
+  color: var(--color-text-primary);
+  background-color: #FAFAFA;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
