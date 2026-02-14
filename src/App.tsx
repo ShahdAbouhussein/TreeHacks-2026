@@ -9,9 +9,8 @@ import {
 import { doc, setDoc } from "firebase/firestore";
 import Home from "./home/App";
 import { BottomNav } from "./home/features/home/components/BottomNav";
-
-const Chat = () => <div>Chat coming soon.</div>;
-const Tasks = () => <div>Tasks coming soon.</div>;
+import Chat from "./pages/Chat";
+const Calendar = () => <div>Calendar coming soon.</div>;
 
 export default function App() {
   const [user, setUser] = useState<any>(null);
@@ -133,10 +132,10 @@ export default function App() {
       isActive: activeTab === "chat",
     },
     {
-      id: "tasks",
-      label: "Tasks",
+      id: "calendar",
+      label: "Calendar",
       icon: "calendar" as const,
-      isActive: activeTab === "tasks",
+      isActive: activeTab === "calendar",
     },
     {
       id: "profile",
@@ -151,7 +150,7 @@ export default function App() {
       <div className="flex-1 pb-24">
         {activeTab === "home" && <Home />}
         {activeTab === "chat" && <Chat />}
-        {activeTab === "tasks" && <Tasks />}
+        {activeTab === "calendar" && <Calendar />}
         {activeTab === "profile" && (
           <div className="relative mx-auto min-h-screen max-w-[402px] bg-background pb-28">
             <header className="flex items-end justify-between px-lg pt-5xl pb-2xl">

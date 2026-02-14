@@ -2,6 +2,11 @@ import express, { Request, Response, NextFunction } from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import { adminAuth } from "./firebaseAdmin";
+import multer from "multer";
+import { exec } from "child_process";
+import fs from "fs";
+import path from "path";
+
 
 dotenv.config();
 
@@ -16,6 +21,42 @@ app.use(express.json());
 app.get("/api/health", (req: Request, res: Response) => {
   res.json({ status: "Server running" });
 });
+
+const upload = multer({ dest: "uploads/" });
+
+app.post("/api/transcribe", upload.single("audio"), (req: any, res) => {
+  console.log("🔥 /api/transcribe hit");
+
+  const audioPath = req.file?.path;
+
+  if (!audioPath) {
+    console.log("No file uploaded");
+    return res.status(400).json({ error: "No audio uploaded" });
+  }
+
+  console.log("Audio saved at:", audioPath);
+
+  const pythonPath = path.join(__dirname, "whisper_env", "bin", "python");
+  const scriptPath = path.join(__dirname, "transcribe.py");
+
+  exec(
+    `${pythonPath} ${scriptPath} ${audioPath}`,
+    (error, stdout, stderr) => {
+      console.log("Whisper finished");
+
+      fs.unlinkSync(audioPath); // delete temp file
+
+      if (error) {
+        console.error("Whisper error:", stderr);
+        return res.status(500).json({ error: "Transcription failed" });
+      }
+
+      console.log("Transcript:", stdout);
+      res.json({ transcript: stdout.trim() });
+    }
+  );
+});
+
 
 /**
  * Firebase ID Token verification middleware
