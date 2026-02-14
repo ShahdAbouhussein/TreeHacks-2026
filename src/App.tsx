@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { auth } from "./lib/firebase";
 import { createUserWithEmailAndPassword } from "firebase/auth";
+import { doc, setDoc } from "firebase/firestore";
+import { db } from "./lib/firebase";
+
 
 export default function App() {
   const [email, setEmail] = useState("");
@@ -8,12 +11,21 @@ export default function App() {
 
   const handleSignup = async () => {
     try {
-      const user = await createUserWithEmailAndPassword(auth, email, password);
-      console.log("User created:", user);
-    } catch (error) {
-      console.error(error);
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+  
+      await setDoc(doc(db, "users", user.uid), {
+        email: user.email,
+        createdAt: new Date(),
+      });
+  
+      console.log("User + Firestore doc created");
+    } catch (error: any) {
+      console.error("Auth error:", error.code);
+      console.error("Full error:", error);
     }
   };
+  
 
   return (
     <div style={{ padding: 40 }}>
