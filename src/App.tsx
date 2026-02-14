@@ -7,6 +7,11 @@ import {
   signInWithEmailAndPassword,
 } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
+import Home from "./home/App";
+import { BottomNav } from "./home/features/home/components/BottomNav";
+
+const Chat = () => <div>Chat coming soon.</div>;
+const Tasks = () => <div>Tasks coming soon.</div>;
 
 export default function App() {
   const [user, setUser] = useState<any>(null);
@@ -14,6 +19,7 @@ export default function App() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLogin, setIsLogin] = useState(false);
+  const [activeTab, setActiveTab] = useState("home");
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -52,62 +58,84 @@ export default function App() {
     }
   };
 
-  const testProtectedRoute = async () => {
-    try {
-      const token = await auth.currentUser?.getIdToken();
-
-      const res = await fetch("http://localhost:5001/api/protected", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      const data = await res.json();
-      console.log("Protected response:", data);
-    } catch (error) {
-      console.error("Protected route error:", error);
-    }
-  };
-
   if (loading) return <div>Loading...</div>;
 
+  if (!user) {
+    return (
+      <div style={{ padding: 40 }}>
+        <h1>{isLogin ? "Sign In" : "Sign Up"}</h1>
+
+        <input placeholder="email" onChange={(e) => setEmail(e.target.value)} />
+
+        <input
+          placeholder="password"
+          type="password"
+          onChange={(e) => setPassword(e.target.value)}
+        />
+
+        <button onClick={handleAuth}>{isLogin ? "Sign In" : "Sign Up"}</button>
+
+        <p
+          style={{ cursor: "pointer", marginTop: 10 }}
+          onClick={() => setIsLogin(!isLogin)}
+        >
+          {isLogin
+            ? "Don't have an account? Sign Up"
+            : "Already have an account? Sign In"}
+        </p>
+      </div>
+    );
+  }
+
+  const navItems = [
+    {
+      id: "home",
+      label: "Home",
+      icon: "home" as const,
+      isActive: activeTab === "home",
+    },
+    {
+      id: "chat",
+      label: "Chat",
+      icon: "chat" as const,
+      isActive: activeTab === "chat",
+    },
+    {
+      id: "tasks",
+      label: "Tasks",
+      icon: "calendar" as const,
+      isActive: activeTab === "tasks",
+    },
+    {
+      id: "profile",
+      label: "Profile",
+      icon: "profile" as const,
+      isActive: activeTab === "profile",
+    },
+  ];
+
   return (
-    <div style={{ padding: 40 }}>
-      {user ? (
-        <>
-          <h2>Logged in as {user.email}</h2>
-          <button onClick={() => signOut(auth)}>Log Out</button>
-        </>
-      ) : (
-        <>
-          <h1>{isLogin ? "Sign In" : "Sign Up"}</h1>
+    <div className="min-h-screen flex flex-col">
+      <div className="flex-1 pb-24">
+        {activeTab === "home" && <Home />}
+        {activeTab === "chat" && <Chat />}
+        {activeTab === "tasks" && <Tasks />}
+        {activeTab === "profile" && (
+          <div className="p-6">
+            <div className="mb-4">
+              Logged in as <strong>{user.email}</strong>
+            </div>
+            <button
+              className="bg-black text-white px-4 py-2"
+              onClick={() => signOut(auth)}
+            >
+              Log Out
+            </button>
+          </div>
+        )}
+      </div>
 
-          <input
-            placeholder="email"
-            onChange={(e) => setEmail(e.target.value)}
-          />
-
-          <input
-            placeholder="password"
-            type="password"
-            onChange={(e) => setPassword(e.target.value)}
-          />
-
-          <button onClick={handleAuth}>
-            {isLogin ? "Sign In" : "Sign Up"}
-          </button>
-
-          <p
-            style={{ cursor: "pointer", marginTop: 10 }}
-            onClick={() => setIsLogin(!isLogin)}
-          >
-            {isLogin
-              ? "Don't have an account? Sign Up"
-              : "Already have an account? Sign In"}
-          </p>
-        </>
-      )}
+      <BottomNav items={navItems} onItemPress={(id) => setActiveTab(id)} />
     </div>
   );
-
 }
