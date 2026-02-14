@@ -52,6 +52,23 @@ export default function App() {
     }
   };
 
+  const testProtectedRoute = async () => {
+    try {
+      const token = await auth.currentUser?.getIdToken();
+
+      const res = await fetch("http://localhost:5001/api/protected", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await res.json();
+      console.log("Protected response:", data);
+    } catch (error) {
+      console.error("Protected route error:", error);
+    }
+  };
+
   if (loading) return <div>Loading...</div>;
 
   return (
@@ -92,4 +109,5 @@ export default function App() {
       )}
     </div>
   );
+
 }
