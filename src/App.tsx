@@ -4,6 +4,7 @@ import {
   onAuthStateChanged,
   signOut,
   createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
 } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
 
@@ -12,6 +13,7 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [isLogin, setIsLogin] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -22,22 +24,29 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
-  const handleSignup = async () => {
+  const handleAuth = async () => {
     try {
-      const userCredential = await createUserWithEmailAndPassword(
-        auth,
-        email,
-        password
-      );
+      if (isLogin) {
+        // SIGN IN
+        await signInWithEmailAndPassword(auth, email, password);
+        console.log("Signed in");
+      } else {
+        // SIGN UP
+        const userCredential = await createUserWithEmailAndPassword(
+          auth,
+          email,
+          password
+        );
 
-      const user = userCredential.user;
+        const user = userCredential.user;
 
-      await setDoc(doc(db, "users", user.uid), {
-        email: user.email,
-        createdAt: new Date(),
-      });
+        await setDoc(doc(db, "users", user.uid), {
+          email: user.email,
+          createdAt: new Date(),
+        });
 
-      console.log("User + Firestore doc created");
+        console.log("User + Firestore doc created");
+      }
     } catch (error: any) {
       console.error("Auth error:", error.code);
     }
@@ -54,17 +63,31 @@ export default function App() {
         </>
       ) : (
         <>
-          <h1>Sign Up</h1>
+          <h1>{isLogin ? "Sign In" : "Sign Up"}</h1>
+
           <input
             placeholder="email"
             onChange={(e) => setEmail(e.target.value)}
           />
+
           <input
             placeholder="password"
             type="password"
             onChange={(e) => setPassword(e.target.value)}
           />
-          <button onClick={handleSignup}>Sign Up</button>
+
+          <button onClick={handleAuth}>
+            {isLogin ? "Sign In" : "Sign Up"}
+          </button>
+
+          <p
+            style={{ cursor: "pointer", marginTop: 10 }}
+            onClick={() => setIsLogin(!isLogin)}
+          >
+            {isLogin
+              ? "Don't have an account? Sign Up"
+              : "Already have an account? Sign In"}
+          </p>
         </>
       )}
     </div>
