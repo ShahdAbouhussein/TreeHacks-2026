@@ -9,8 +9,7 @@ import {
 import { doc, setDoc } from "firebase/firestore";
 import Home from "./home/App";
 import { BottomNav } from "./home/features/home/components/BottomNav";
-
-const Chat = () => <div>Chat coming soon.</div>;
+import Chat from "./pages/Chat";
 const Calendar = () => <div>Calendar coming soon.</div>;
 
 export default function App() {
