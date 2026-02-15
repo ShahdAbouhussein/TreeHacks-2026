@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { auth, db } from "./lib/firebase";
 import {
   onAuthStateChanged,
@@ -353,73 +354,86 @@ export default function App() {
   return (
     <div className="min-h-screen flex flex-col">
       <div className="flex-1 pb-24">
-        {activeTab === "home" && (
-          <Home
-            onSeeAllTasks={() => setActiveTab("tasks")}
-            onNavPress={(id) => setActiveTab(id)}
-            events={events}
-            userId={user.uid}
-            userName={user.displayName || user.email?.split("@")[0] || "there"}
-          />
-        )}
-        {activeTab === "chat" && <Chat />}
-        {activeTab === "tasks" && (
-          <TasksPage
-            onBack={() => setActiveTab("home")}
-            userId={user.uid}
-          />
-        )}
-        {activeTab === "calendar" && (
-          <CalendarPage
-            onBack={() => setActiveTab("home")}
-            events={events}
-            userId={user.uid}
-          />
-        )}
-        {activeTab === "profile" && (
-          <div className="relative mx-auto min-h-screen max-w-[402px] bg-background pb-28">
-            <header className="flex items-end justify-between px-lg pt-5xl pb-2xl">
-              <div className="flex flex-col gap-xs">
-                <h1 className="font-serif text-[28px] leading-[34px] tracking-[-0.3px] text-text-strong">
-                  Profile
-                </h1>
-              </div>
-            </header>
-
-            <div className="mx-lg space-y-lg">
-              <div className="rounded-[16px] bg-surface p-2xl shadow-subtle">
-                <div className="flex items-center justify-between border-b border-divider pb-lg">
-                  <div className="space-y-xs">
-                    <p className="text-[12px] uppercase tracking-[0.12em] text-text-tertiary">
-                      Email
-                    </p>
-                    <p className="text-[17px] leading-6 text-text-strong">
-                      {user.email}
-                    </p>
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeTab}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2, ease: "easeInOut" }}
+          >
+            {activeTab === "home" && (
+              <Home
+                onSeeAllTasks={() => setActiveTab("tasks")}
+                onNavPress={(id) => setActiveTab(id)}
+                events={events}
+                userId={user.uid}
+                userName={user.displayName || user.email?.split("@")[0] || "there"}
+              />
+            )}
+            {activeTab === "chat" && <Chat />}
+            {activeTab === "tasks" && (
+              <TasksPage
+                onBack={() => setActiveTab("home")}
+                userId={user.uid}
+              />
+            )}
+            {activeTab === "calendar" && (
+              <CalendarPage
+                onBack={() => setActiveTab("home")}
+                events={events}
+                userId={user.uid}
+                onNavPress={handleNavItemPress}
+              />
+            )}
+            {activeTab === "profile" && (
+              <div className="relative mx-auto min-h-screen max-w-[402px] bg-background pb-28">
+                <header className="flex items-end justify-between px-lg pt-5xl pb-2xl">
+                  <div className="flex flex-col gap-xs">
+                    <h1 className="font-serif text-[28px] leading-[34px] tracking-[-0.3px] text-text-strong">
+                      Profile
+                    </h1>
                   </div>
-                  <span className="rounded-full border border-border px-md py-xs text-[12px] leading-4 text-text-secondary">
-                    Primary
-                  </span>
-                </div>
-                <div className="pt-lg text-[14px] leading-5 text-text-secondary">
-                  Member since just now.
+                </header>
+
+                <div className="mx-lg space-y-lg">
+                  <div className="rounded-[16px] bg-surface p-2xl shadow-subtle">
+                    <div className="flex items-center justify-between border-b border-divider pb-lg">
+                      <div className="space-y-xs">
+                        <p className="text-[12px] uppercase tracking-[0.12em] text-text-tertiary">
+                          Email
+                        </p>
+                        <p className="text-[17px] leading-6 text-text-strong">
+                          {user.email}
+                        </p>
+                      </div>
+                      <span className="rounded-full border border-border px-md py-xs text-[12px] leading-4 text-text-secondary">
+                        Primary
+                      </span>
+                    </div>
+                    <div className="pt-lg text-[14px] leading-5 text-text-secondary">
+                      Member since just now.
+                    </div>
+                  </div>
+                  <button
+                    className="h-12 w-full rounded-full border border-border text-[14px] font-medium text-text-strong transition-colors hover:bg-subtle-fill"
+                    onClick={() => signOut(auth)}
+                  >
+                    Log out
+                  </button>
                 </div>
               </div>
-              <button
-                className="h-12 w-full rounded-full border border-border text-[14px] font-medium text-text-strong transition-colors hover:bg-subtle-fill"
-                onClick={() => signOut(auth)}
-              >
-                Log out
-              </button>
-            </div>
-          </div>
-        )}
+            )}
+          </motion.div>
+        </AnimatePresence>
       </div>
 
-      {hasChatBar && showChatBar ? (
-        <ChatBar onMenuPress={() => setShowChatBar(false)} />
-      ) : (
-        <BottomNav items={navItems} onItemPress={handleNavItemPress} />
+      {activeTab !== "calendar" && (
+        hasChatBar && showChatBar ? (
+          <ChatBar onMenuPress={() => setShowChatBar(false)} />
+        ) : (
+          <BottomNav items={navItems} onItemPress={handleNavItemPress} />
+        )
       )}
     </div>
   );

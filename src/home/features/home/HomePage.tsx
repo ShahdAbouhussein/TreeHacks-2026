@@ -9,8 +9,11 @@ interface HomePageProps {
   greeting: string;
   days: {
     date: number;
+    month: number;
+    year: number;
     label: string;
     isSelected?: boolean;
+    isToday?: boolean;
   }[];
   timeSlots: {
     hour: number;
@@ -29,6 +32,7 @@ interface HomePageProps {
     dueDate: string;
     description: string;
     tag: string;
+    category?: string;
   }[];
   navItems: {
     id: string;
@@ -38,7 +42,11 @@ interface HomePageProps {
   }[];
   onAddPress?: () => void;
   onAiPress?: () => void;
-  onDayPress?: (date: number) => void;
+  onDayPress?: (date: number, month: number, year: number) => void;
+  onNextWeek?: () => void;
+  onPrevWeek?: () => void;
+  weekDirection?: number;
+  scrollKey?: number;
   onSeeAllTasks?: () => void;
   onNavPress?: (id: string) => void;
 }
@@ -54,6 +62,10 @@ export function HomePage({
   onAddPress,
   onAiPress,
   onDayPress,
+  onNextWeek,
+  onPrevWeek,
+  weekDirection,
+  scrollKey,
   onSeeAllTasks,
   onNavPress,
 }: HomePageProps) {
@@ -66,8 +78,14 @@ export function HomePage({
         onAiPress={onAiPress}
       />
       <div className="mx-lg overflow-hidden rounded-[16px] bg-surface shadow-subtle">
-        <WeekStrip days={days} onDayPress={onDayPress} />
-        <EventList timeSlots={timeSlots} events={events} />
+        <WeekStrip
+          days={days}
+          onDayPress={onDayPress}
+          onNextWeek={onNextWeek}
+          onPrevWeek={onPrevWeek}
+          direction={weekDirection}
+        />
+        <EventList timeSlots={timeSlots} events={events} scrollKey={scrollKey} />
       </div>
       <TasksSection tasks={tasks} onSeeAll={onSeeAllTasks} />
       <BottomNav items={navItems} onItemPress={onNavPress} />
