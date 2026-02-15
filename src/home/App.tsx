@@ -61,6 +61,7 @@ function App({ onSeeAllTasks, onNavPress, events = [], userId, userName }: AppPr
   const [selectedDate, setSelectedDate] = useState(() => new Date());
   const [weekDirection, setWeekDirection] = useState(0);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
   const [scrollKey, setScrollKey] = useState(0);
   const { tasks: firestoreTasks } = useTasks(userId);
 
@@ -80,6 +81,11 @@ function App({ onSeeAllTasks, onNavPress, events = [], userId, userName }: AppPr
     });
   }, []);
 
+  const handleEventPress = useCallback((eventId: string) => {
+    const found = events.find((e) => e.id === eventId);
+    if (found) setEditingEvent(found);
+  }, [events]);
+
   const handlePrevWeek = useCallback(() => {
     setWeekDirection(-1);
     setSelectedDate((prev) => {
@@ -96,8 +102,17 @@ function App({ onSeeAllTasks, onNavPress, events = [], userId, userName }: AppPr
     dayEnd.setHours(23, 59, 59, 999);
 
     return events
-      .filter((e) => !e.allDay && e.start <= dayEnd && e.end >= dayStart)
+      .filter((e) => e.start <= dayEnd && e.end >= dayStart)
       .map((e) => {
+        if (e.allDay) {
+          return {
+            id: e.id,
+            title: e.title,
+            timeRange: "All day",
+            startHour: 0,
+            durationHours: 1,
+          };
+        }
         // Clamp start/end to the visible day
         const visibleStart = e.start < dayStart ? dayStart : e.start;
         const visibleEnd = e.end > dayEnd ? dayEnd : e.end;
@@ -154,11 +169,13 @@ function App({ onSeeAllTasks, onNavPress, events = [], userId, userName }: AppPr
         weekDirection={weekDirection}
         onSeeAllTasks={onSeeAllTasks}
         onNavPress={onNavPress}
+        onEventPress={handleEventPress}
       />
-      {showAddModal && userId && (
+      {(showAddModal || editingEvent) && userId && (
         <AddItemModal
           userId={userId}
-          onClose={() => setShowAddModal(false)}
+          editEvent={editingEvent ?? undefined}
+          onClose={() => { setShowAddModal(false); setEditingEvent(null); }}
         />
       )}
     </>

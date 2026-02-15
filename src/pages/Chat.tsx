@@ -120,7 +120,7 @@ export default function Chat({ open, onClose, userId }: ChatProps) {
       audioContextRef.current = ctx;
       const source = ctx.createMediaStreamSource(stream);
       const analyser = ctx.createAnalyser();
-      analyser.fftSize = 128;
+      analyser.fftSize = 256;
       source.connect(analyser);
       analyserRef.current = analyser;
 
@@ -137,10 +137,14 @@ export default function Chat({ open, onClose, userId }: ChatProps) {
         if (analyserRef.current) {
           const data = new Uint8Array(analyserRef.current.frequencyBinCount);
           analyserRef.current.getByteFrequencyData(data);
+          // Sample individual frequency bins for each bar
+          const count = 28;
+          const binStep = Math.floor(data.length * 0.7 / count);
           setWaveformBars(
-            Array.from({ length: 28 }, (_, i) => {
-              const idx = Math.floor((i / 28) * data.length);
-              return Math.max(0.06, data[idx] / 255);
+            Array.from({ length: count }, (_, i) => {
+              const bin = data[i * binStep] / 255;
+              const rand = 0.6 + Math.random() * 0.8;
+              return Math.max(0.06, bin * rand);
             })
           );
         }
@@ -178,10 +182,13 @@ export default function Chat({ open, onClose, userId }: ChatProps) {
         if (analyserRef.current) {
           const data = new Uint8Array(analyserRef.current.frequencyBinCount);
           analyserRef.current.getByteFrequencyData(data);
+          const count = 28;
+          const binStep = Math.floor(data.length * 0.7 / count);
           setWaveformBars(
-            Array.from({ length: 28 }, (_, i) => {
-              const idx = Math.floor((i / 28) * data.length);
-              return Math.max(0.06, data[idx] / 255);
+            Array.from({ length: count }, (_, i) => {
+              const bin = data[i * binStep] / 255;
+              const rand = 0.6 + Math.random() * 0.8;
+              return Math.max(0.06, bin * rand);
             })
           );
         }
