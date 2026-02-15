@@ -57,7 +57,7 @@ export default function TasksPage({ onBack, userId }: TasksPageProps) {
   };
 
   return (
-    <div className="relative mx-auto min-h-screen max-w-[402px] bg-background">
+    <div className="relative mx-auto max-w-[402px] bg-background">
       {/* Back button */}
       <div className="px-lg pt-[52px]">
         <button
