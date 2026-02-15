@@ -1,5 +1,6 @@
 import { useRef, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+const API_BASE = import.meta.env.VITE_API_BASE || "";
 
 type RecordingState = "recording" | "paused" | "transcribing" | "review" | "text-chat";
 
