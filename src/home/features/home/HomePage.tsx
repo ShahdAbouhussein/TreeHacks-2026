@@ -49,6 +49,7 @@ interface HomePageProps {
   scrollKey?: number;
   onSeeAllTasks?: () => void;
   onNavPress?: (id: string) => void;
+  onEventPress?: (eventId: string) => void;
 }
 
 export function HomePage({
@@ -68,9 +69,10 @@ export function HomePage({
   scrollKey,
   onSeeAllTasks,
   onNavPress,
+  onEventPress,
 }: HomePageProps) {
   return (
-    <div className="relative mx-auto min-h-screen max-w-[402px] bg-background pb-28">
+    <div className="relative mx-auto max-w-[402px] bg-background pb-28">
       <Header
         greeting={greeting}
         name={userName}
@@ -85,7 +87,7 @@ export function HomePage({
           onPrevWeek={onPrevWeek}
           direction={weekDirection}
         />
-        <EventList timeSlots={timeSlots} events={events} scrollKey={scrollKey} />
+        <EventList timeSlots={timeSlots} events={events} scrollKey={scrollKey} onEventPress={onEventPress} />
       </div>
       <TasksSection tasks={tasks} onSeeAll={onSeeAllTasks} />
       <BottomNav items={navItems} onItemPress={onNavPress} />
