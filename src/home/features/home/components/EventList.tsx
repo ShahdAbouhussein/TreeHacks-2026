@@ -30,7 +30,7 @@ export function EventList({ timeSlots, events, scrollKey }: EventListProps) {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = 0;
     }
-  }, [scrollKey, nowTop]);
+  }, [scrollKey]);
 
   return (
     <section aria-label="Daily schedule" className="relative">
