@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
-import { collection, addDoc, updateDoc, doc, Timestamp } from "firebase/firestore";
+import { collection, addDoc, updateDoc, deleteDoc, doc, Timestamp } from "firebase/firestore";
 import { db } from "../../../../lib/firebase";
 import type { CalendarEvent } from "../../../../lib/useEvents";
 
@@ -403,6 +403,17 @@ export function AddItemModal({ userId, onClose, editEvent }: AddItemModalProps) 
     }
   };
 
+  const handleDelete = async () => {
+    if (!editEvent) return;
+    try {
+      await deleteDoc(doc(db, "users", userId, "events", editEvent.id));
+      onClose();
+    } catch (err: any) {
+      console.error("Failed to delete:", err);
+      setError(err.message || "Failed to delete.");
+    }
+  };
+
   return (
     <AnimatePresence>
       <motion.div
@@ -579,6 +590,17 @@ export function AddItemModal({ userId, onClose, editEvent }: AddItemModalProps) 
               </>
             )}
           </div>
+
+          {/* Delete button (edit mode only) */}
+          {isEdit && (
+            <button
+              type="button"
+              onClick={handleDelete}
+              className="mt-4 w-full rounded-[16px] bg-background py-3 text-[15px] font-medium text-red-500"
+            >
+              Delete Event
+            </button>
+          )}
 
           {/* Priority selector (hidden in edit mode since events don't have categories) */}
           {!isEdit && (
