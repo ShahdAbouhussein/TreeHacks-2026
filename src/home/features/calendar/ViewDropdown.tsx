@@ -42,7 +42,7 @@ export function ViewDropdown({ value, onChange }: ViewDropdownProps) {
   const openHeight = Math.max(40, Math.ceil(contentBounds.height));
 
   return (
-    <div ref={containerRef} className="relative h-10 w-10">
+    <div ref={containerRef} className="relative z-30 h-10 w-10">
       <motion.div
         layout
         initial={false}
