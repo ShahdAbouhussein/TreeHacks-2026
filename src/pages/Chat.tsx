@@ -1,5 +1,6 @@
 import { useRef, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+
 const API_BASE = import.meta.env.VITE_API_BASE || "";
 
 type RecordingState = "recording" | "paused" | "transcribing" | "review" | "text-chat";
@@ -225,7 +226,7 @@ export default function Chat({ open, onClose, userId }: ChatProps) {
       formData.append("audio", blob, "recording.webm");
 
       try {
-        const res = await fetch("/api/transcribe", {
+        const res = await fetch(`${API_BASE}/api/transcribe`, {
           method: "POST",
           body: formData,
         });
@@ -248,7 +249,7 @@ export default function Chat({ open, onClose, userId }: ChatProps) {
         // Auto-parse transcript for tasks/events
         setParsing(true);
         try {
-          const parseRes = await fetch("/api/parse-transcript", {
+          const parseRes = await fetch(`${API_BASE}/api/parse-transcript`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ transcript: fullTranscript, userId }),
@@ -560,7 +561,7 @@ export default function Chat({ open, onClose, userId }: ChatProps) {
                                 onClick={async () => {
                                   if (accepted) return;
                                   try {
-                                    const res = await fetch("/api/save-item", {
+                                    const res = await fetch(`${API_BASE}/api/save-item`, {
                                       method: "POST",
                                       headers: { "Content-Type": "application/json" },
                                       body: JSON.stringify({ userId, type: "task", item: task }),
@@ -609,7 +610,7 @@ export default function Chat({ open, onClose, userId }: ChatProps) {
                                 onClick={async () => {
                                   if (accepted) return;
                                   try {
-                                    const res = await fetch("/api/save-item", {
+                                    const res = await fetch(`${API_BASE}/api/save-item`, {
                                       method: "POST",
                                       headers: { "Content-Type": "application/json" },
                                       body: JSON.stringify({ userId, type: "event", item: event }),
@@ -651,7 +652,7 @@ export default function Chat({ open, onClose, userId }: ChatProps) {
                             : text;
                           setTranscript(fullTranscript);
 
-                          const parseRes = await fetch("/api/parse-transcript", {
+                          const parseRes = await fetch(`${API_BASE}/api/parse-transcript`, {
                             method: "POST",
                             headers: { "Content-Type": "application/json" },
                             body: JSON.stringify({ transcript: fullTranscript, userId }),
@@ -852,7 +853,7 @@ export default function Chat({ open, onClose, userId }: ChatProps) {
                               onClick={async () => {
                                 if (accepted) return;
                                 try {
-                                  const res = await fetch("/api/save-item", {
+                                  const res = await fetch(`${API_BASE}/api/save-item`, {
                                     method: "POST",
                                     headers: { "Content-Type": "application/json" },
                                     body: JSON.stringify({ userId, type: "task", item: task }),
@@ -908,7 +909,7 @@ export default function Chat({ open, onClose, userId }: ChatProps) {
                                 if (accepted) return;
                                 console.log("Saving event:", event);
                                 try {
-                                  const res = await fetch("/api/save-item", {
+                                  const res = await fetch(`${API_BASE}/api/save-item`, {
                                     method: "POST",
                                     headers: { "Content-Type": "application/json" },
                                     body: JSON.stringify({ userId, type: "event", item: event }),
@@ -959,7 +960,7 @@ export default function Chat({ open, onClose, userId }: ChatProps) {
                               <button
                                 onClick={async () => {
                                   try {
-                                    const res = await fetch("/api/delete-item", {
+                                    const res = await fetch(`${API_BASE}/api/delete-item`, {
                                       method: "POST",
                                       headers: { "Content-Type": "application/json" },
                                       body: JSON.stringify({ userId, type: del.type, itemId: del.id }),
