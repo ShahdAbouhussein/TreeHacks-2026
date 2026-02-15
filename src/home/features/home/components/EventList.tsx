@@ -18,9 +18,10 @@ interface EventListProps {
   timeSlots: TimeSlot[];
   events: Event[];
   scrollKey?: number;
+  onEventPress?: (eventId: string) => void;
 }
 
-export function EventList({ timeSlots, events, scrollKey }: EventListProps) {
+export function EventList({ timeSlots, events, scrollKey, onEventPress }: EventListProps) {
   const startHour = timeSlots[0]?.hour ?? 0;
   const slotHeight = 40;
   const totalHeight = timeSlots.length * slotHeight;
@@ -58,10 +59,10 @@ export function EventList({ timeSlots, events, scrollKey }: EventListProps) {
               className="absolute left-[56px] right-0"
               style={{
                 top: (event.startHour - startHour) * slotHeight,
-                height: event.durationHours * slotHeight,
+                height: event.durationHours * slotHeight - 3,
               }}
             >
-              <EventItem title={event.title} timeRange={event.timeRange} />
+              <EventItem title={event.title} timeRange={event.timeRange} onClick={() => onEventPress?.(event.id)} />
             </div>
           ))}
         </div>
