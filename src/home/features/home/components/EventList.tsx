@@ -17,6 +17,7 @@ interface TimeSlot {
 interface EventListProps {
   timeSlots: TimeSlot[];
   events: Event[];
+  scrollKey?: number;
 }
 
 function useCurrentTime() {
@@ -28,7 +29,7 @@ function useCurrentTime() {
   return now;
 }
 
-export function EventList({ timeSlots, events }: EventListProps) {
+export function EventList({ timeSlots, events, scrollKey }: EventListProps) {
   const startHour = timeSlots[0]?.hour ?? 0;
   const slotHeight = 40; // px per hour slot
   const totalHeight = timeSlots.length * slotHeight;
@@ -43,7 +44,7 @@ export function EventList({ timeSlots, events }: EventListProps) {
       const scrollTo = Math.max(nowTop - 80, 0);
       scrollRef.current.scrollTop = scrollTo;
     }
-  }, []);
+  }, [scrollKey, nowTop]);
 
   return (
     <section aria-label="Daily schedule" className="relative">

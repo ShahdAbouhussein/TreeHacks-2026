@@ -2,6 +2,7 @@ interface TaskListItemProps {
   title: string;
   dueDate: string;
   description: string;
+  category?: "progress" | "protect" | "maintain" | "flourish";
   onDismiss?: () => void;
 }
 
@@ -9,10 +10,14 @@ export function TaskListItem({
   title,
   dueDate,
   description,
+  category,
   onDismiss,
 }: TaskListItemProps) {
   return (
-    <article className="flex w-full items-start justify-between rounded-[16px] bg-surface px-[20px] py-[18px] shadow-subtle">
+    <article
+      className="flex w-full items-start justify-between rounded-[16px] bg-surface px-[20px] py-[18px] shadow-subtle"
+      data-category={category}
+    >
       <div className="flex-1">
         <span className="text-[12px] leading-4 tracking-[0.04em] text-text-secondary">
           Due {dueDate}
