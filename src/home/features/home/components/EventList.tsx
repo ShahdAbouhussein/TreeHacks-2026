@@ -20,7 +20,7 @@ interface EventListProps {
   scrollKey?: number;
 }
 
-export function EventList({ timeSlots, events }: EventListProps) {
+export function EventList({ timeSlots, events, scrollKey }: EventListProps) {
   const startHour = timeSlots[0]?.hour ?? 0;
   const slotHeight = 40;
   const totalHeight = timeSlots.length * slotHeight;
@@ -30,7 +30,7 @@ export function EventList({ timeSlots, events }: EventListProps) {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = 0;
     }
-  }, []);
+  }, [scrollKey, nowTop]);
 
   return (
     <section aria-label="Daily schedule" className="relative">

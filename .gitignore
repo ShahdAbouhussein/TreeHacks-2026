@@ -23,6 +23,8 @@ dist-ssr
 *.sln
 *.sw?
 
-#environment variables
+# Environment files
 .env
+.env.*
 server/.env
+.vercel
