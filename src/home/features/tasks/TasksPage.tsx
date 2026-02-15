@@ -135,7 +135,6 @@ export default function TasksPage({ onBack, userId }: TasksPageProps) {
                 title={task.title}
                 dueDate={task.dueDate}
                 description={task.description}
-                category={task.category}
                 onDismiss={() => dismissTask(task.id)}
               />
             ))
