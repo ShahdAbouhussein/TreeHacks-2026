@@ -6,13 +6,10 @@ import type { CalendarEvent } from "../../../lib/useEvents";
 const DAY_LABELS = ["Sun", "Mon", "Tues", "Wed", "Thurs", "Fri", "Sat"];
 
 const TIME_SLOTS = [
-  "9 AM",
-  "10 AM",
-  "11 AM",
-  "12 PM",
-  "1 PM",
-  "2 PM",
-  "3 PM",
+  "12 AM", "1 AM", "2 AM", "3 AM", "4 AM", "5 AM",
+  "6 AM", "7 AM", "8 AM", "9 AM", "10 AM", "11 AM",
+  "12 PM", "1 PM", "2 PM", "3 PM", "4 PM", "5 PM",
+  "6 PM", "7 PM", "8 PM", "9 PM", "10 PM", "11 PM",
 ];
 
 interface Commitment {
@@ -25,6 +22,7 @@ interface CalendarPageProps {
   onBack: () => void;
   events?: CalendarEvent[];
   userId?: string;
+  onNavPress?: (id: string) => void;
 }
 
 // ── helpers ──
@@ -63,8 +61,6 @@ function getMonthName(month: number) {
   ][month];
 }
 
-// ── helpers ──
-
 function formatEventDate(date: Date): string {
   const m = date.getMonth() + 1;
   const d = date.getDate();
@@ -75,6 +71,13 @@ function formatEventDate(date: Date): string {
   const hour12 = h % 12 || 12;
   const time = min === 0 ? `${hour12} ${suffix}` : `${hour12}:${min.toString().padStart(2, "0")} ${suffix}`;
   return `${m}/${d}/${y} ${time}`;
+}
+
+/** Compute a stable week key from a date (Sunday of that week). */
+function weekKeyFor(date: Date) {
+  const d = new Date(date);
+  d.setDate(d.getDate() - d.getDay());
+  return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
 }
 
 // ── sub-components ──
@@ -150,9 +153,9 @@ function MonthGrid({
               }`}
             >
               {isSelected && (
-                <span className="absolute inset-0 m-auto h-[36px] w-[36px] rounded-full border border-border" />
+                <span className="absolute inset-0 m-auto h-[36px] w-[36px] rounded-full bg-accent/15" />
               )}
-              <span className="relative z-10">{cell.day}</span>
+              <span className={`relative z-10 ${isSelected ? "font-semibold text-accent" : ""}`}>{cell.day}</span>
             </button>
           );
         })}
@@ -197,9 +200,9 @@ function WeekStrip({
             className="relative flex h-[44px] items-center justify-center text-[15px] leading-5 text-text-strong"
           >
             {isSelected && (
-              <span className="absolute inset-0 m-auto h-[36px] w-[36px] rounded-[10px] border border-border" />
+              <span className="absolute inset-0 m-auto h-[36px] w-[36px] rounded-full bg-accent/15" />
             )}
-            <span className="relative z-10">{dayNum}</span>
+            <span className={`relative z-10 ${isSelected ? "font-semibold text-accent" : ""}`}>{dayNum}</span>
           </button>
         );
       })}
@@ -209,14 +212,14 @@ function WeekStrip({
 
 function TimeSlots({ events = [] }: { events?: CalendarEvent[] }) {
   const slotHeight = 44;
-  const startHourOffset = 9; // first slot is 9 AM
+  const startHourOffset = 0; // starts at midnight
 
   return (
-    <div className="mt-md relative flex flex-col">
+    <div className="mt-md relative flex flex-col overflow-y-auto max-h-[400px]">
       {TIME_SLOTS.map((slot) => (
         <div
           key={slot}
-          className="flex h-[44px] items-center border-t border-subtle-fill px-[4px] text-[13px] leading-4 text-text-secondary"
+          className="flex h-[44px] shrink-0 items-center px-[4px] text-[13px] leading-4 text-text-secondary"
         >
           {slot}
         </div>
@@ -253,18 +256,124 @@ const SNAP_FRACTIONS: Record<SheetSnap, number> = {
 };
 const SNAP_ORDER: SheetSnap[] = ["closed", "half", "full"];
 
+// ── nav icons (same as BottomNav) ──
+const navIcons = {
+  home: (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <path d="M3 10.5L12 3L21 10.5V20C21 20.5523 20.5523 21 20 21H15V15H9V21H4C3.44772 21 3 20.5523 3 20V10.5Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  ),
+  chat: (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <path d="M21 15C21 15.5304 20.7893 16.0391 20.4142 16.4142C20.0391 16.7893 19.5304 17 19 17H7L3 21V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H19C19.5304 3 20.0391 3.21071 20.4142 3.58579C20.7893 3.96086 21 4.46957 21 5V15Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  ),
+  calendar: (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <path d="M8 2V6M16 2V6M3 10H21M5 4H19C20.1046 4 21 4.89543 21 6V20C21 21.1046 20.1046 22 19 22H5C3.89543 22 3 21.1046 3 20V6C3 4.89543 3.89543 4 5 4Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  ),
+  profile: (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <path d="M20 21V19C20 16.7909 18.2091 15 16 15H8C5.79086 15 4 16.7909 4 19V21M16 7C16 9.20914 14.2091 11 12 11C9.79086 11 8 9.20914 8 7C8 4.79086 9.79086 3 12 3C14.2091 3 16 4.79086 16 7Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  ),
+};
+
+const NAV_ITEMS: { id: string; icon: keyof typeof navIcons }[] = [
+  { id: "home", icon: "home" },
+  { id: "chat", icon: "chat" },
+  { id: "calendar", icon: "calendar" },
+  { id: "profile", icon: "profile" },
+];
+
 // ── main component ──
 
-export default function CalendarPage({ onBack, events = [] }: CalendarPageProps) {
+export default function CalendarPage({ onBack, events = [], onNavPress }: CalendarPageProps) {
   const now = new Date();
   const [view, setView] = useState<CalendarView>("month");
-  const [currentYear] = useState(now.getFullYear());
-  const [currentMonth] = useState(now.getMonth());
+  const [currentYear, setCurrentYear] = useState(now.getFullYear());
+  const [currentMonth, setCurrentMonth] = useState(now.getMonth());
   const [selectedDay, setSelectedDay] = useState(now.getDate());
   const [sheetSnap, setSheetSnap] = useState<SheetSnap>("closed");
+  const [swipeDirection, setSwipeDirection] = useState(0);
   const sheetRef = useRef<HTMLDivElement>(null);
   const dragStartY = useRef(0);
 
+  // Navigation helpers — only for month/week/day pagination (not day-within-week)
+  const goNext = useCallback(() => {
+    setSwipeDirection(1);
+    if (view === "month") {
+      setCurrentMonth((m) => {
+        if (m >= 11) {
+          setCurrentYear((y) => y + 1);
+          return 0;
+        }
+        return m + 1;
+      });
+      setSelectedDay((d) => {
+        const newMonth = currentMonth >= 11 ? 0 : currentMonth + 1;
+        const newYear = currentMonth >= 11 ? currentYear + 1 : currentYear;
+        const maxDay = getDaysInMonth(newYear, newMonth);
+        return Math.min(d, maxDay);
+      });
+    } else if (view === "week") {
+      const next = new Date(currentYear, currentMonth, selectedDay + 7);
+      setCurrentYear(next.getFullYear());
+      setCurrentMonth(next.getMonth());
+      setSelectedDay(next.getDate());
+    } else {
+      const next = new Date(currentYear, currentMonth, selectedDay + 1);
+      setCurrentYear(next.getFullYear());
+      setCurrentMonth(next.getMonth());
+      setSelectedDay(next.getDate());
+    }
+  }, [view, currentYear, currentMonth, selectedDay]);
+
+  const goPrev = useCallback(() => {
+    setSwipeDirection(-1);
+    if (view === "month") {
+      setCurrentMonth((m) => {
+        if (m <= 0) {
+          setCurrentYear((y) => y - 1);
+          return 11;
+        }
+        return m - 1;
+      });
+      setSelectedDay((d) => {
+        const newMonth = currentMonth <= 0 ? 11 : currentMonth - 1;
+        const newYear = currentMonth <= 0 ? currentYear - 1 : currentYear;
+        const maxDay = getDaysInMonth(newYear, newMonth);
+        return Math.min(d, maxDay);
+      });
+    } else if (view === "week") {
+      const prev = new Date(currentYear, currentMonth, selectedDay - 7);
+      setCurrentYear(prev.getFullYear());
+      setCurrentMonth(prev.getMonth());
+      setSelectedDay(prev.getDate());
+    } else {
+      const prev = new Date(currentYear, currentMonth, selectedDay - 1);
+      setCurrentYear(prev.getFullYear());
+      setCurrentMonth(prev.getMonth());
+      setSelectedDay(prev.getDate());
+    }
+  }, [view, currentYear, currentMonth, selectedDay]);
+
+  // Swipe handler for calendar content
+  const handleCalendarDragEnd = useCallback(
+    (_: any, info: PanInfo) => {
+      const swipeThreshold = 50;
+      const velocityThreshold = 300;
+      if (info.offset.x < -swipeThreshold || info.velocity.x < -velocityThreshold) {
+        goNext();
+      } else if (info.offset.x > swipeThreshold || info.velocity.x > velocityThreshold) {
+        goPrev();
+      }
+    },
+    [goNext, goPrev]
+  );
+
+  // Sheet drag handlers
   const handleDragStart = useCallback((_: any, info: PanInfo) => {
     dragStartY.current = info.point.y;
   }, []);
@@ -272,11 +381,10 @@ export default function CalendarPage({ onBack, events = [] }: CalendarPageProps)
   const handleDragEnd = useCallback(
     (_: any, info: PanInfo) => {
       const vh = window.innerHeight;
-      const delta = dragStartY.current - info.point.y; // positive = dragged up
+      const delta = dragStartY.current - info.point.y;
       const currentFraction = SNAP_FRACTIONS[sheetSnap];
       const targetFraction = currentFraction + delta / vh;
 
-      // Find the nearest snap point
       let closest: SheetSnap = "closed";
       let minDist = Infinity;
       for (const snap of SNAP_ORDER) {
@@ -287,7 +395,6 @@ export default function CalendarPage({ onBack, events = [] }: CalendarPageProps)
         }
       }
 
-      // Also account for velocity — a fast flick should go to next snap
       if (info.velocity.y < -300 && sheetSnap !== "full") {
         const idx = SNAP_ORDER.indexOf(sheetSnap);
         closest = SNAP_ORDER[Math.min(idx + 1, SNAP_ORDER.length - 1)];
@@ -323,7 +430,6 @@ export default function CalendarPage({ onBack, events = [] }: CalendarPageProps)
       wEnd.setHours(23, 59, 59, 999);
       return events.filter((e) => e.start >= weekStart && e.start <= wEnd);
     }
-    // day view
     return events.filter((e) => {
       return (
         e.start.getFullYear() === currentYear &&
@@ -366,6 +472,17 @@ export default function CalendarPage({ onBack, events = [] }: CalendarPageProps)
 
   const sheetHeight = `${SNAP_FRACTIONS[sheetSnap] * 100}vh`;
 
+  // Build the AnimatePresence key so that:
+  // - month view paginates on month change
+  // - week view paginates on week change (NOT day change within a week)
+  // - day view paginates on day change
+  const animKey =
+    view === "month"
+      ? `month-${currentYear}-${currentMonth}`
+      : view === "week"
+        ? `week-${weekKeyFor(selectedDate)}`
+        : `day-${currentYear}-${currentMonth}-${selectedDay}`;
+
   return (
     <div className="relative mx-auto min-h-screen max-w-[402px] bg-background">
       {/* Back button */}
@@ -392,7 +509,7 @@ export default function CalendarPage({ onBack, events = [] }: CalendarPageProps)
       {/* Month title */}
       <div className="mt-md px-lg">
         <h1 className="font-serif text-[28px] leading-[34px] tracking-[-0.3px] text-text-strong">
-          {monthName}
+          {monthName} {currentYear}
           {subtitle && (
             <span className="ml-[6px] font-sans text-[15px] font-normal leading-5 tracking-normal text-text-secondary">
               {subtitle}
@@ -401,45 +518,57 @@ export default function CalendarPage({ onBack, events = [] }: CalendarPageProps)
         </h1>
       </div>
 
-      {/* Calendar content */}
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={view}
-          initial={{ opacity: 0, y: 4 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -4 }}
-          transition={{ duration: 0.15, ease: "easeOut" }}
-          className="mt-lg px-lg"
-        >
-          {view === "month" && (
-            <MonthGrid
-              year={currentYear}
-              month={currentMonth}
-              selectedDay={selectedDay}
-              onSelectDay={setSelectedDay}
-            />
-          )}
-
-          {view === "week" && (
-            <>
-              <WeekStrip
-                weekStart={weekStart}
+      {/* Calendar content with swipe navigation — overflow-hidden keeps animations clipped */}
+      <div className="relative mt-lg overflow-hidden">
+        <AnimatePresence mode="wait" initial={false} custom={swipeDirection}>
+          <motion.div
+            key={animKey}
+            custom={swipeDirection}
+            variants={{
+              enter: (dir: number) => ({ x: dir * 150, opacity: 0 }),
+              center: { x: 0, opacity: 1 },
+              exit: (dir: number) => ({ x: dir * -150, opacity: 0 }),
+            }}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            transition={{ duration: 0.35, ease: [0.25, 0.1, 0.25, 1] }}
+            drag="x"
+            dragConstraints={{ left: 0, right: 0 }}
+            dragElastic={0.2}
+            onDragEnd={handleCalendarDragEnd}
+            className="px-lg touch-pan-y"
+          >
+            {view === "month" && (
+              <MonthGrid
+                year={currentYear}
+                month={currentMonth}
                 selectedDay={selectedDay}
                 onSelectDay={setSelectedDay}
               />
-              <TimeSlots events={dayEvents} />
-            </>
-          )}
+            )}
 
-          {view === "day" && <TimeSlots events={dayEvents} />}
-        </motion.div>
-      </AnimatePresence>
+            {view === "week" && (
+              <>
+                <WeekStrip
+                  weekStart={weekStart}
+                  selectedDay={selectedDay}
+                  onSelectDay={setSelectedDay}
+                />
+                <TimeSlots events={dayEvents} />
+              </>
+            )}
 
-      {/* Fixed bottom sheet — drag to expand, behind navbar (z-0) */}
+            {view === "day" && <TimeSlots events={dayEvents} />}
+          </motion.div>
+        </AnimatePresence>
+      </div>
+
+      {/* Fixed bottom sheet */}
       <motion.div
         ref={sheetRef}
         animate={{ height: sheetHeight }}
-        transition={{ type: "spring", damping: 30, stiffness: 300 }}
+        transition={{ type: "spring", damping: 28, stiffness: 200 }}
         className="fixed bottom-0 left-0 right-0 z-10 overflow-hidden rounded-t-[28px] bg-surface shadow-[0_-4px_24px_rgba(0,0,0,0.03)]"
       >
         {/* Drag handle */}
@@ -475,6 +604,32 @@ export default function CalendarPage({ onBack, events = [] }: CalendarPageProps)
           </div>
         </motion.div>
       </motion.div>
+
+      {/* Bottom navigation bar */}
+      <nav
+        aria-label="Main navigation"
+        className="fixed bottom-6 left-1/2 z-20 flex -translate-x-1/2 items-center gap-xs rounded-full bg-surface-alt px-sm py-sm shadow-subtle"
+      >
+        {NAV_ITEMS.map((item) => {
+          const isActive = item.id === "calendar";
+          return (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => onNavPress?.(item.id)}
+              aria-label={item.id}
+              aria-current={isActive ? "page" : undefined}
+              className={`flex h-12 w-[69px] items-center justify-center rounded-full transition-colors ${
+                isActive
+                  ? "bg-surface text-text-strong shadow-subtle"
+                  : "text-text-secondary"
+              }`}
+            >
+              {navIcons[item.icon]}
+            </button>
+          );
+        })}
+      </nav>
     </div>
   );
 }
