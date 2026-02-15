@@ -77,7 +77,7 @@ export function HomePage({
         onAddPress={onAddPress}
         onAiPress={onAiPress}
       />
-      <div className="mx-lg overflow-hidden rounded-[16px] bg-surface shadow-subtle">
+      <div className="mx-lg overflow-hidden rounded-[12px]" style={{ border: "1px solid rgba(150, 150, 150, 0.2)", backgroundColor: "#FFFFFF" }}>
         <WeekStrip
           days={days}
           onDayPress={onDayPress}

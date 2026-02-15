@@ -52,6 +52,8 @@ export default function App() {
   const [activeTab, setActiveTab] = useState("home");
   // When on the tasks page, controls whether we show ChatBar (true) or BottomNav (false)
   const [showChatBar, setShowChatBar] = useState(true);
+  // Chat popover open state
+  const [chatOpen, setChatOpen] = useState(false);
 
   const { events } = useEvents(user?.uid);
 
@@ -340,8 +342,11 @@ export default function App() {
   const hasChatBar = activeTab === "tasks" || activeTab === "calendar";
 
   const handleNavItemPress = (id: string) => {
+    if (id === "chat") {
+      setChatOpen(true);
+      return;
+    }
     if (hasChatBar && id === "chat") {
-      // On tasks/calendar page, clicking chat in the normal nav switches back to chat bar
       setShowChatBar(true);
       return;
     }
@@ -362,13 +367,13 @@ export default function App() {
             {activeTab === "home" && (
               <Home
                 onSeeAllTasks={() => setActiveTab("tasks")}
-                onNavPress={(id) => setActiveTab(id)}
+                onNavPress={handleNavItemPress}
                 events={events}
                 userId={user.uid}
                 userName={user.displayName || user.email?.split("@")[0] || "there"}
               />
             )}
-            {activeTab === "chat" && <Chat />}
+            {/* Chat is now a popover, not a page */}
             {activeTab === "tasks" && (
               <TasksPage
                 onBack={() => setActiveTab("home")}
@@ -412,6 +417,53 @@ export default function App() {
                       Member since just now.
                     </div>
                   </div>
+                  <div className="rounded-[16px] bg-surface p-2xl shadow-subtle">
+                    <div className="space-y-xs">
+                      <p className="text-[12px] uppercase tracking-[0.12em] text-text-tertiary">
+                        Calendar
+                      </p>
+                      <p className="text-[17px] leading-6 text-text-strong">
+                        Upload your calendar
+                      </p>
+                    </div>
+                    <div className="mt-lg">
+                      <button
+                        className="flex h-12 w-full items-center justify-center rounded-full border border-dashed border-border text-[14px] font-medium text-text-secondary transition-colors hover:bg-subtle-fill"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={importing}
+                      >
+                        {importing
+                          ? "Importing…"
+                          : icsFile
+                            ? icsFile.name
+                            : "Choose .ics file"}
+                      </button>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept=".ics"
+                        className="hidden"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file || !user) return;
+                          setIcsFile(file);
+                          setImporting(true);
+                          try {
+                            const content = await file.text();
+                            const events = parseIcsFile(content);
+                            await importEventsToFirestore(user.uid, events);
+                            setIcsFile(null);
+                          } catch (err) {
+                            console.error("ICS import failed:", err);
+                          } finally {
+                            setImporting(false);
+                            e.target.value = "";
+                          }
+                        }}
+                      />
+                    </div>
+                  </div>
+
                   <button
                     className="h-12 w-full rounded-full border border-border text-[14px] font-medium text-text-strong transition-colors hover:bg-subtle-fill"
                     onClick={() => signOut(auth)}
@@ -432,6 +484,9 @@ export default function App() {
           <BottomNav items={navItems} onItemPress={handleNavItemPress} />
         )
       )}
+
+      {/* Chat popover modal */}
+      <Chat open={chatOpen} onClose={() => setChatOpen(false)} userId={user.uid} />
     </div>
   );
 }
