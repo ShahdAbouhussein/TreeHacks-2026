@@ -1,17 +1,18 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
-import { collection, addDoc, updateDoc, doc, Timestamp } from "firebase/firestore";
+import { collection, addDoc, updateDoc, deleteDoc, doc, Timestamp } from "firebase/firestore";
 import { db } from "../../../../lib/firebase";
 import type { CalendarEvent } from "../../../../lib/useEvents";
 
 /* ── constants ── */
 
-const CATEGORIES = ["protect", "progress", "maintain"] as const;
+const CATEGORIES = ["protect", "progress", "maintain", "flourish"] as const;
 type Category = (typeof CATEGORIES)[number];
 const CATEGORY_LABELS: Record<Category, string> = {
   protect: "Protect",
   progress: "Progress",
   maintain: "Maintain",
+  flourish: "Flourish",
 };
 
 const smoothSpring = { type: "spring" as const, stiffness: 200, damping: 24, mass: 0.8 };
@@ -403,6 +404,17 @@ export function AddItemModal({ userId, onClose, editEvent }: AddItemModalProps) 
     }
   };
 
+  const handleDelete = async () => {
+    if (!editEvent) return;
+    try {
+      await deleteDoc(doc(db, "users", userId, "events", editEvent.id));
+      onClose();
+    } catch (err: any) {
+      console.error("Failed to delete:", err);
+      setError(err.message || "Failed to delete.");
+    }
+  };
+
   return (
     <AnimatePresence>
       <motion.div
@@ -489,10 +501,16 @@ export function AddItemModal({ userId, onClose, editEvent }: AddItemModalProps) 
           )}
 
           {/* Date / time section */}
-          <div className="mt-4 rounded-[16px] bg-background px-4">
+          <AnimatePresence mode="wait" initial={false}>
             {itemType === "task" ? (
-              /* ── Task: single due date row ── */
-              <>
+              <motion.div
+                key="task-fields"
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={{ duration: 0.2, ease: "easeInOut" }}
+                className="mt-4 rounded-[16px] bg-background px-4"
+              >
                 <div className="flex items-center justify-between py-3">
                   <span className="text-[15px] text-text-strong">Due date</span>
                   <Pill
@@ -507,10 +525,16 @@ export function AddItemModal({ userId, onClose, editEvent }: AddItemModalProps) 
                     <InlineDatePicker value={dueDate} onChange={(d) => { setDueDate(d); setActivePicker(null); }} />
                   </>
                 )}
-              </>
+              </motion.div>
             ) : (
-              /* ── Event: Starts / Ends rows (Apple Calendar style) ── */
-              <>
+              <motion.div
+                key="event-fields"
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={{ duration: 0.2, ease: "easeInOut" }}
+                className="mt-4 rounded-[16px] bg-background px-4"
+              >
                 {/* Starts row */}
                 <div className="flex items-center justify-between py-3">
                   <span className="text-[15px] text-text-strong">Starts</span>
@@ -576,9 +600,20 @@ export function AddItemModal({ userId, onClose, editEvent }: AddItemModalProps) 
                     <InlineDatePicker value={endDate} onChange={(d) => { setEndDate(d); setActivePicker(null); }} />
                   </>
                 )}
-              </>
+              </motion.div>
             )}
-          </div>
+          </AnimatePresence>
+
+          {/* Delete button (edit mode only) */}
+          {isEdit && (
+            <button
+              type="button"
+              onClick={handleDelete}
+              className="mt-4 w-full rounded-[16px] bg-background py-3 text-[15px] font-medium text-red-500"
+            >
+              Delete Event
+            </button>
+          )}
 
           {/* Priority selector (hidden in edit mode since events don't have categories) */}
           {!isEdit && (
