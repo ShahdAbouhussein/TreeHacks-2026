@@ -12,7 +12,6 @@ import Home from "./home/App";
 import { BottomNav } from "./home/features/home/components/BottomNav";
 import TasksPage from "./home/features/tasks/TasksPage";
 import CalendarPage from "./home/features/calendar/CalendarPage";
-import { ChatBar } from "./home/features/tasks/ChatBar";
 import Chat from "./pages/Chat";
 import { parseIcsFile } from "./lib/icsParser";
 import { importEventsToFirestore } from "./lib/importEvents";
@@ -60,19 +59,10 @@ export default function App() {
   const [deleting, setDeleting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [activeTab, setActiveTab] = useState("home");
-  // When on the tasks page, controls whether we show ChatBar (true) or BottomNav (false)
-  const [showChatBar, setShowChatBar] = useState(true);
   // Chat popover open state
   const [chatOpen, setChatOpen] = useState(false);
 
   const { events } = useEvents(user?.uid);
-
-  // Reset to chat bar whenever we enter the tasks or calendar tab
-  useEffect(() => {
-    if (activeTab === "tasks" || activeTab === "calendar") {
-      setShowChatBar(true);
-    }
-  }, [activeTab]);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -356,15 +346,9 @@ export default function App() {
     },
   ];
 
-  const hasChatBar = activeTab === "tasks" || activeTab === "calendar";
-
   const handleNavItemPress = (id: string) => {
     if (id === "chat") {
       setChatOpen(true);
-      return;
-    }
-    if (hasChatBar && id === "chat") {
-      setShowChatBar(true);
       return;
     }
     setActiveTab(id);
