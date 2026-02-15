@@ -491,11 +491,6 @@ export default function CalendarPage({ onBack, events = [], userId, onNavPress }
 
   const monthName = getMonthName(currentMonth);
 
-  const subtitle =
-    view === "week"
-      ? `${weekStart.getDate()}-${weekEnd.getDate()}`
-      : undefined;
-
   const commitmentsLabel =
     view === "month" ? "This month\u2019s commitments" : "Upcoming this week";
 
