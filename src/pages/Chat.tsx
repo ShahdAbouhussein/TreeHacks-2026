@@ -2,6 +2,7 @@ import { useRef, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const API_BASE = import.meta.env.VITE_API_BASE || "https://aposporic-eleanore-unquestioning.ngrok-free.dev";
+const NGROK_HEADERS: Record<string, string> = { "ngrok-skip-browser-warning": "true" };
 
 type RecordingState = "recording" | "paused" | "transcribing" | "review" | "text-chat";
 
@@ -221,6 +222,7 @@ export default function Chat({ open, onClose, userId }: ChatProps) {
       try {
         const res = await fetch(`${API_BASE}/api/transcribe`, {
           method: "POST",
+          headers: { ...NGROK_HEADERS },
           body: formData,
         });
         const data = await res.json();
@@ -244,7 +246,7 @@ export default function Chat({ open, onClose, userId }: ChatProps) {
         try {
           const parseRes = await fetch(`${API_BASE}/api/parse-transcript`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", ...NGROK_HEADERS },
             body: JSON.stringify({ transcript: fullTranscript, userId }),
           });
           const parseData = await parseRes.json();
@@ -556,7 +558,7 @@ export default function Chat({ open, onClose, userId }: ChatProps) {
                                   try {
                                     const res = await fetch(`${API_BASE}/api/save-item`, {
                                       method: "POST",
-                                      headers: { "Content-Type": "application/json" },
+                                      headers: { "Content-Type": "application/json", ...NGROK_HEADERS },
                                       body: JSON.stringify({ userId, type: "task", item: task }),
                                     });
                                     if (res.ok) setAcceptedTasks((prev) => new Set(prev).add(idx));
@@ -605,7 +607,7 @@ export default function Chat({ open, onClose, userId }: ChatProps) {
                                   try {
                                     const res = await fetch(`${API_BASE}/api/save-item`, {
                                       method: "POST",
-                                      headers: { "Content-Type": "application/json" },
+                                      headers: { "Content-Type": "application/json", ...NGROK_HEADERS },
                                       body: JSON.stringify({ userId, type: "event", item: event }),
                                     });
                                     if (res.ok) setAcceptedEvents((prev) => new Set(prev).add(idx));
@@ -647,7 +649,7 @@ export default function Chat({ open, onClose, userId }: ChatProps) {
 
                           const parseRes = await fetch(`${API_BASE}/api/parse-transcript`, {
                             method: "POST",
-                            headers: { "Content-Type": "application/json" },
+                            headers: { "Content-Type": "application/json", ...NGROK_HEADERS },
                             body: JSON.stringify({ transcript: fullTranscript, userId }),
                           });
                           const parseData = await parseRes.json();
@@ -848,7 +850,7 @@ export default function Chat({ open, onClose, userId }: ChatProps) {
                                 try {
                                   const res = await fetch(`${API_BASE}/api/save-item`, {
                                     method: "POST",
-                                    headers: { "Content-Type": "application/json" },
+                                    headers: { "Content-Type": "application/json", ...NGROK_HEADERS },
                                     body: JSON.stringify({ userId, type: "task", item: task }),
                                   });
                                   if (res.ok) {
@@ -904,7 +906,7 @@ export default function Chat({ open, onClose, userId }: ChatProps) {
                                 try {
                                   const res = await fetch(`${API_BASE}/api/save-item`, {
                                     method: "POST",
-                                    headers: { "Content-Type": "application/json" },
+                                    headers: { "Content-Type": "application/json", ...NGROK_HEADERS },
                                     body: JSON.stringify({ userId, type: "event", item: event }),
                                   });
                                   const resData = await res.json();
@@ -955,7 +957,7 @@ export default function Chat({ open, onClose, userId }: ChatProps) {
                                   try {
                                     const res = await fetch(`${API_BASE}/api/delete-item`, {
                                       method: "POST",
-                                      headers: { "Content-Type": "application/json" },
+                                      headers: { "Content-Type": "application/json", ...NGROK_HEADERS },
                                       body: JSON.stringify({ userId, type: del.type, itemId: del.id }),
                                     });
                                     if (res.ok) {
