@@ -1,20 +1,15 @@
-import { useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { HomePage } from "./features/home/HomePage";
+import { AddItemModal } from "./features/home/components/AddItemModal";
 import type { CalendarEvent } from "../lib/useEvents";
 import { useTasks } from "../lib/useTasks";
 
 const DAY_LABELS = ["Sun", "Mon", "Tues", "Wed", "Thurs", "Fri", "Sat"];
 
-const TIME_SLOTS = [
-  { hour: 9, label: "9 AM" },
-  { hour: 10, label: "10 AM" },
-  { hour: 11, label: "11 AM" },
-  { hour: 12, label: "12 PM" },
-  { hour: 13, label: "1 PM" },
-  { hour: 14, label: "2 PM" },
-  { hour: 15, label: "3 PM" },
-  { hour: 16, label: "4 PM" },
-];
+const TIME_SLOTS = Array.from({ length: 24 }, (_, i) => ({
+  hour: i,
+  label: i === 0 ? "12 AM" : i < 12 ? `${i} AM` : i === 12 ? "12 PM" : `${i - 12} PM`,
+}));
 
 function formatTime(date: Date): string {
   const h = date.getHours();
@@ -24,20 +19,32 @@ function formatTime(date: Date): string {
   return m === 0 ? `${hour12} ${suffix}` : `${hour12}:${m.toString().padStart(2, "0")} ${suffix}`;
 }
 
-function getCurrentWeekDays(): { date: number; label: string; isSelected?: boolean }[] {
-  const now = new Date();
-  const today = now.getDate();
-  const dayOfWeek = now.getDay(); // 0 = Sunday
-  const startOfWeek = new Date(now);
-  startOfWeek.setDate(today - dayOfWeek);
+function getWeekDays(selectedDate: Date) {
+  const dayOfWeek = selectedDate.getDay();
+  const startOfWeek = new Date(selectedDate);
+  startOfWeek.setDate(selectedDate.getDate() - dayOfWeek);
+
+  const today = new Date();
+  const todayDate = today.getDate();
+  const todayMonth = today.getMonth();
+  const todayYear = today.getFullYear();
 
   return Array.from({ length: 7 }, (_, i) => {
     const d = new Date(startOfWeek);
     d.setDate(startOfWeek.getDate() + i);
     return {
       date: d.getDate(),
+      month: d.getMonth(),
+      year: d.getFullYear(),
       label: DAY_LABELS[i],
-      isSelected: d.getDate() === today && d.getMonth() === now.getMonth(),
+      isSelected:
+        d.getDate() === selectedDate.getDate() &&
+        d.getMonth() === selectedDate.getMonth() &&
+        d.getFullYear() === selectedDate.getFullYear(),
+      isToday:
+        d.getDate() === todayDate &&
+        d.getMonth() === todayMonth &&
+        d.getFullYear() === todayYear,
     };
   });
 }
@@ -51,29 +58,63 @@ interface AppProps {
 }
 
 function App({ onSeeAllTasks, onNavPress, events = [], userId, userName }: AppProps) {
-  const days = useMemo(() => getCurrentWeekDays(), []);
+  const [selectedDate, setSelectedDate] = useState(() => new Date());
+  const [weekDirection, setWeekDirection] = useState(0);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [scrollKey, setScrollKey] = useState(0);
   const { tasks: firestoreTasks } = useTasks(userId);
 
-  const todayEvents = useMemo(() => {
-    const now = new Date();
-    const todayStr = `${now.getFullYear()}-${now.getMonth()}-${now.getDate()}`;
+  const days = useMemo(() => getWeekDays(selectedDate), [selectedDate]);
+
+  const handleDayPress = useCallback((date: number, month: number, year: number) => {
+    setSelectedDate(new Date(year, month, date));
+    setScrollKey((k) => k + 1);
+  }, []);
+
+  const handleNextWeek = useCallback(() => {
+    setWeekDirection(1);
+    setSelectedDate((prev) => {
+      const next = new Date(prev);
+      next.setDate(prev.getDate() + 7);
+      return next;
+    });
+  }, []);
+
+  const handlePrevWeek = useCallback(() => {
+    setWeekDirection(-1);
+    setSelectedDate((prev) => {
+      const next = new Date(prev);
+      next.setDate(prev.getDate() - 7);
+      return next;
+    });
+  }, []);
+
+  const selectedEvents = useMemo(() => {
+    const dayStart = new Date(selectedDate);
+    dayStart.setHours(0, 0, 0, 0);
+    const dayEnd = new Date(selectedDate);
+    dayEnd.setHours(23, 59, 59, 999);
 
     return events
-      .filter((e) => {
-        const s = e.start;
-        return `${s.getFullYear()}-${s.getMonth()}-${s.getDate()}` === todayStr && !e.allDay;
-      })
-      .map((e) => ({
-        id: e.id,
-        title: e.title,
-        timeRange: `${formatTime(e.start)} - ${formatTime(e.end)}`,
-        startHour: e.start.getHours() + e.start.getMinutes() / 60,
-        durationHours: Math.max(
-          (e.end.getTime() - e.start.getTime()) / (1000 * 60 * 60),
-          0.5
-        ),
-      }));
-  }, [events]);
+      .filter((e) => !e.allDay && e.start <= dayEnd && e.end >= dayStart)
+      .map((e) => {
+        // Clamp start/end to the visible day
+        const visibleStart = e.start < dayStart ? dayStart : e.start;
+        const visibleEnd = e.end > dayEnd ? dayEnd : e.end;
+        const startHour = visibleStart.getHours() + visibleStart.getMinutes() / 60;
+        const endHour = visibleEnd > dayEnd
+          ? 24
+          : visibleEnd.getHours() + visibleEnd.getMinutes() / 60;
+
+        return {
+          id: e.id,
+          title: e.title,
+          timeRange: `${formatTime(e.start)} - ${formatTime(e.end)}`,
+          startHour,
+          durationHours: Math.max(endHour - startHour, 0.5),
+        };
+      });
+  }, [events, selectedDate]);
 
   const homeTasks = useMemo(
     () =>
@@ -83,6 +124,7 @@ function App({ onSeeAllTasks, onNavPress, events = [], userId, userName }: AppPr
         dueDate: t.dueDate,
         description: t.description,
         tag: t.tag,
+        category: t.category,
       })),
     [firestoreTasks]
   );
@@ -95,17 +137,31 @@ function App({ onSeeAllTasks, onNavPress, events = [], userId, userName }: AppPr
   ];
 
   return (
-    <HomePage
-      greeting="Welcome back,"
-      userName={userName || "there"}
-      days={days}
-      timeSlots={TIME_SLOTS}
-      events={todayEvents}
-      tasks={homeTasks}
-      navItems={navItems}
-      onSeeAllTasks={onSeeAllTasks}
-      onNavPress={onNavPress}
-    />
+    <>
+      <HomePage
+        greeting="Welcome back,"
+        userName={userName || "there"}
+        days={days}
+        timeSlots={TIME_SLOTS}
+        events={selectedEvents}
+        scrollKey={scrollKey}
+        tasks={homeTasks}
+        navItems={navItems}
+        onAddPress={() => setShowAddModal(true)}
+        onDayPress={handleDayPress}
+        onNextWeek={handleNextWeek}
+        onPrevWeek={handlePrevWeek}
+        weekDirection={weekDirection}
+        onSeeAllTasks={onSeeAllTasks}
+        onNavPress={onNavPress}
+      />
+      {showAddModal && userId && (
+        <AddItemModal
+          userId={userId}
+          onClose={() => setShowAddModal(false)}
+        />
+      )}
+    </>
   );
 }
 
