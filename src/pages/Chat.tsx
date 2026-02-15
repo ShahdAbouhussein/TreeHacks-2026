@@ -138,14 +138,14 @@ export default function Chat({ open, onClose, userId }: ChatProps) {
         if (analyserRef.current) {
           const data = new Uint8Array(analyserRef.current.frequencyBinCount);
           analyserRef.current.getByteFrequencyData(data);
-          // Sample individual frequency bins for each bar
           const count = 28;
-          const binStep = Math.floor(data.length * 0.7 / count);
+          const usable = Math.floor(data.length * 0.75);
+          const binWidth = Math.floor(usable / count);
           setWaveformBars(
             Array.from({ length: count }, (_, i) => {
-              const bin = data[i * binStep] / 255;
-              const rand = 0.6 + Math.random() * 0.8;
-              return Math.max(0.06, bin * rand);
+              let sum = 0;
+              for (let j = 0; j < binWidth; j++) sum += data[i * binWidth + j];
+              return Math.max(0.06, sum / binWidth / 255);
             })
           );
         }
@@ -184,12 +184,13 @@ export default function Chat({ open, onClose, userId }: ChatProps) {
           const data = new Uint8Array(analyserRef.current.frequencyBinCount);
           analyserRef.current.getByteFrequencyData(data);
           const count = 28;
-          const binStep = Math.floor(data.length * 0.7 / count);
+          const usable = Math.floor(data.length * 0.75);
+          const binWidth = Math.floor(usable / count);
           setWaveformBars(
             Array.from({ length: count }, (_, i) => {
-              const bin = data[i * binStep] / 255;
-              const rand = 0.6 + Math.random() * 0.8;
-              return Math.max(0.06, bin * rand);
+              let sum = 0;
+              for (let j = 0; j < binWidth; j++) sum += data[i * binWidth + j];
+              return Math.max(0.06, sum / binWidth / 255);
             })
           );
         }
@@ -534,7 +535,7 @@ export default function Chat({ open, onClose, userId }: ChatProps) {
                   {/* Parsed items from chat */}
                   {(parsedTasks.length > 0 || parsedEvents.length > 0 || deletions.length > 0) && (
                     <div className="max-h-[30vh] overflow-y-auto border-t border-divider px-5 py-3">
-                      <div className="space-y-3">
+                      <div className="space-y-2">
                         {parsedTasks.map((task, idx) => {
                           const accepted = acceptedTasks.has(idx);
                           return (
@@ -543,21 +544,16 @@ export default function Chat({ open, onClose, userId }: ChatProps) {
                               initial={{ opacity: 0, y: 12 }}
                               animate={{ opacity: 1, y: 0 }}
                               transition={{ delay: idx * 0.08 }}
-                              className="flex items-start rounded-[16px] bg-white p-4 shadow-subtle"
-                              style={accepted ? { borderLeft: "3px solid #6F8F7A" } : undefined}
+                              className="flex items-center rounded-[2px] py-[14px] pl-[16px] pr-[12px]"
+                              style={{ backgroundColor: "#F7F7F7", borderLeft: "3px solid #6F8F7A" }}
                             >
                               <div className="flex-1 min-w-0">
-                                <p className="text-[12px] font-medium text-text-secondary">
+                                <p className="text-[13px] leading-4 text-text-secondary">
                                   Due {new Date(task.dueDate + "T00:00:00").toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "numeric" })}
                                 </p>
-                                <p className="mt-1.5 text-[17px] font-bold leading-5 text-text-strong">
+                                <p className="mt-1 text-[15px] font-medium leading-5 text-text-strong">
                                   {task.title}
                                 </p>
-                                {task.description && (
-                                  <p className="mt-1 text-[14px] leading-5 text-text-secondary">
-                                    {task.description}
-                                  </p>
-                                )}
                               </div>
                               <button
                                 onClick={async () => {
@@ -573,10 +569,10 @@ export default function Chat({ open, onClose, userId }: ChatProps) {
                                     console.error("Save task error:", err);
                                   }
                                 }}
-                                className="ml-3 mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-colors"
+                                className="ml-2 flex h-7 w-7 shrink-0 items-center justify-center rounded-full transition-colors"
                                 style={{ backgroundColor: accepted ? "#6F8F7A" : "#E5E7EB" }}
                               >
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={accepted ? "white" : "#6F8F7A"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={accepted ? "white" : "#6F8F7A"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                                   <path d="M20 6L9 17l-5-5" />
                                 </svg>
                               </button>
@@ -585,28 +581,22 @@ export default function Chat({ open, onClose, userId }: ChatProps) {
                         })}
                         {parsedEvents.map((event, idx) => {
                           const accepted = acceptedEvents.has(idx);
+                          const startDt = new Date(event.start);
+                          const timeStr = `${startDt.toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "numeric" })} at ${startDt.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}`;
                           return (
                             <motion.div
                               key={`event-${idx}`}
                               initial={{ opacity: 0, y: 12 }}
                               animate={{ opacity: 1, y: 0 }}
                               transition={{ delay: (parsedTasks.length + idx) * 0.08 }}
-                              className="flex items-start rounded-[16px] bg-white p-4 shadow-subtle"
-                              style={accepted ? { borderLeft: "3px solid #6F8F7A" } : undefined}
+                              className="flex items-center rounded-[2px] py-[14px] pl-[16px] pr-[12px]"
+                              style={{ backgroundColor: "#F7F7F7", borderLeft: "3px solid #6F8F7A" }}
                             >
                               <div className="flex-1 min-w-0">
-                                <p className="text-[12px] font-medium text-text-secondary">
-                                  {new Date(event.start).toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "numeric" })}{" "}
-                                  at {new Date(event.start).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
-                                </p>
-                                <p className="mt-1.5 text-[17px] font-bold leading-5 text-text-strong">
+                                <p className="text-[13px] leading-4 text-text-secondary">{timeStr}</p>
+                                <p className="mt-1 text-[15px] font-medium leading-5 text-text-strong">
                                   {event.title}
                                 </p>
-                                {event.description && (
-                                  <p className="mt-1 text-[14px] leading-5 text-text-secondary">
-                                    {event.description}
-                                  </p>
-                                )}
                               </div>
                               <button
                                 onClick={async () => {
@@ -622,10 +612,10 @@ export default function Chat({ open, onClose, userId }: ChatProps) {
                                     console.error("Save event error:", err);
                                   }
                                 }}
-                                className="ml-3 mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-colors"
+                                className="ml-2 flex h-7 w-7 shrink-0 items-center justify-center rounded-full transition-colors"
                                 style={{ backgroundColor: accepted ? "#6F8F7A" : "#E5E7EB" }}
                               >
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={accepted ? "white" : "#6F8F7A"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={accepted ? "white" : "#6F8F7A"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                                   <path d="M20 6L9 17l-5-5" />
                                 </svg>
                               </button>
@@ -827,7 +817,7 @@ export default function Chat({ open, onClose, userId }: ChatProps) {
                   )}
 
                   {(parsedTasks.length > 0 || parsedEvents.length > 0 || deletions.length > 0) && (
-                    <div className="mt-4 space-y-3">
+                    <div className="mt-4 space-y-2">
                       {/* Task cards */}
                       {parsedTasks.map((task, idx) => {
                         const accepted = acceptedTasks.has(idx);
@@ -837,21 +827,16 @@ export default function Chat({ open, onClose, userId }: ChatProps) {
                             initial={{ opacity: 0, y: 12 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: idx * 0.08 }}
-                            className="flex items-start rounded-[16px] bg-white p-4 shadow-subtle"
-                            style={accepted ? { borderLeft: "3px solid #6F8F7A" } : undefined}
+                            className="flex items-center rounded-[2px] py-[14px] pl-[16px] pr-[12px]"
+                            style={{ backgroundColor: "#F7F7F7", borderLeft: "3px solid #6F8F7A" }}
                           >
                             <div className="flex-1 min-w-0">
-                              <p className="text-[12px] font-medium text-text-secondary">
+                              <p className="text-[13px] leading-4 text-text-secondary">
                                 Due {new Date(task.dueDate + "T00:00:00").toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "numeric" })}
                               </p>
-                              <p className="mt-1.5 text-[17px] font-bold leading-5 text-text-strong">
+                              <p className="mt-1 text-[15px] font-medium leading-5 text-text-strong">
                                 {task.title}
                               </p>
-                              {task.description && (
-                                <p className="mt-1 text-[14px] leading-5 text-text-secondary">
-                                  {task.description}
-                                </p>
-                              )}
                             </div>
                             <button
                               onClick={async () => {
@@ -862,19 +847,15 @@ export default function Chat({ open, onClose, userId }: ChatProps) {
                                     headers: { "Content-Type": "application/json" },
                                     body: JSON.stringify({ userId, type: "task", item: task }),
                                   });
-                                  if (res.ok) {
-                                    setAcceptedTasks((prev) => new Set(prev).add(idx));
-                                  }
+                                  if (res.ok) setAcceptedTasks((prev) => new Set(prev).add(idx));
                                 } catch (err) {
                                   console.error("Save task error:", err);
                                 }
                               }}
-                              className="ml-3 mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-colors"
-                              style={{
-                                backgroundColor: accepted ? "#6F8F7A" : "#E5E7EB",
-                              }}
+                              className="ml-2 flex h-7 w-7 shrink-0 items-center justify-center rounded-full transition-colors"
+                              style={{ backgroundColor: accepted ? "#6F8F7A" : "#E5E7EB" }}
                             >
-                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={accepted ? "white" : "#6F8F7A"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={accepted ? "white" : "#6F8F7A"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                                 <path d="M20 6L9 17l-5-5" />
                               </svg>
                             </button>
@@ -885,54 +866,41 @@ export default function Chat({ open, onClose, userId }: ChatProps) {
                       {/* Event cards */}
                       {parsedEvents.map((event, idx) => {
                         const accepted = acceptedEvents.has(idx);
+                        const startDt = new Date(event.start);
+                        const timeStr = `${startDt.toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "numeric" })} at ${startDt.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}`;
                         return (
                           <motion.div
                             key={`event-${idx}`}
                             initial={{ opacity: 0, y: 12 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: (parsedTasks.length + idx) * 0.08 }}
-                            className="flex items-start rounded-[16px] bg-white p-4 shadow-subtle"
-                            style={accepted ? { borderLeft: "3px solid #6F8F7A" } : undefined}
+                            className="flex items-center rounded-[2px] py-[14px] pl-[16px] pr-[12px]"
+                            style={{ backgroundColor: "#F7F7F7", borderLeft: "3px solid #6F8F7A" }}
                           >
                             <div className="flex-1 min-w-0">
-                              <p className="text-[12px] font-medium text-text-secondary">
-                                {new Date(event.start).toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "numeric" })}{" "}
-                                at {new Date(event.start).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
-                              </p>
-                              <p className="mt-1.5 text-[17px] font-bold leading-5 text-text-strong">
+                              <p className="text-[13px] leading-4 text-text-secondary">{timeStr}</p>
+                              <p className="mt-1 text-[15px] font-medium leading-5 text-text-strong">
                                 {event.title}
                               </p>
-                              {event.description && (
-                                <p className="mt-1 text-[14px] leading-5 text-text-secondary">
-                                  {event.description}
-                                </p>
-                              )}
                             </div>
                             <button
                               onClick={async () => {
                                 if (accepted) return;
-                                console.log("Saving event:", event);
                                 try {
                                   const res = await fetch(`${API_BASE}/api/save-item`, {
                                     method: "POST",
                                     headers: { "Content-Type": "application/json" },
                                     body: JSON.stringify({ userId, type: "event", item: event }),
                                   });
-                                  const resData = await res.json();
-                                  console.log("Save event response:", res.status, resData);
-                                  if (res.ok) {
-                                    setAcceptedEvents((prev) => new Set(prev).add(idx));
-                                  }
+                                  if (res.ok) setAcceptedEvents((prev) => new Set(prev).add(idx));
                                 } catch (err) {
                                   console.error("Save event error:", err);
                                 }
                               }}
-                              className="ml-3 mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-colors"
-                              style={{
-                                backgroundColor: accepted ? "#6F8F7A" : "#E5E7EB",
-                              }}
+                              className="ml-2 flex h-7 w-7 shrink-0 items-center justify-center rounded-full transition-colors"
+                              style={{ backgroundColor: accepted ? "#6F8F7A" : "#E5E7EB" }}
                             >
-                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={accepted ? "white" : "#6F8F7A"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={accepted ? "white" : "#6F8F7A"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                                 <path d="M20 6L9 17l-5-5" />
                               </svg>
                             </button>
