@@ -6,9 +6,14 @@ import multer from "multer";
 import { exec } from "child_process";
 import fs from "fs";
 import path from "path";
+import OpenAI from "openai";
 
 
 dotenv.config();
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
 
 const app = express();
 
