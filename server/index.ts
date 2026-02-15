@@ -69,13 +69,40 @@ app.post("/api/transcribe", upload.single("audio"), async (req: any, res) => {
 
 
 app.post("/api/parse-transcript", async (req: Request, res: Response) => {
-  const { transcript, userId } = req.body;
+  const { transcript, userId, timeZone, clientDate } = req.body;
 
   if (!transcript || !userId) {
     return res.status(400).json({ error: "transcript and userId are required" });
   }
 
-  const today = new Date().toISOString().split("T")[0];
+  const formatDateInTimeZone = (date: Date, tz?: string) => {
+    try {
+      const parts = new Intl.DateTimeFormat("en-CA", {
+        timeZone: tz,
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      }).formatToParts(date);
+      const y = parts.find((p) => p.type === "year")?.value;
+      const m = parts.find((p) => p.type === "month")?.value;
+      const d = parts.find((p) => p.type === "day")?.value;
+      if (y && m && d) return `${y}-${m}-${d}`;
+    } catch {
+      // Fallback to server-local date if timezone is invalid
+    }
+    const local = new Date(date);
+    const y = local.getFullYear();
+    const m = String(local.getMonth() + 1).padStart(2, "0");
+    const d = String(local.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  };
+
+  const tz = typeof timeZone === "string" && timeZone.trim() ? timeZone : undefined;
+  const clientToday =
+    typeof clientDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(clientDate)
+      ? clientDate
+      : undefined;
+  const today = clientToday || formatDateInTimeZone(new Date(), tz);
 
   try {
     // Fetch existing items so GPT can match deletion requests
@@ -93,7 +120,8 @@ app.post("/api/parse-transcript", async (req: Request, res: Response) => {
         {
           role: "system",
           content: `You are an assistant that extracts actionable tasks and calendar events from voice transcripts, and also detects requests to remove existing items.
-Today's date is ${today}. Return JSON only with this schema:
+Today's date is ${today}. Use this as the authoritative "today" when resolving relative dates.
+Return JSON only with this schema:
 {
   "tasks": [{ "title": string, "dueDate": "YYYY-MM-DD", "description": string, "category": "protect"|"progress"|"maintain"|"flourish" }],
   "events": [{ "title": string, "start": "ISO 8601", "end": "ISO 8601", "description": string }],

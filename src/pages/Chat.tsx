@@ -249,10 +249,12 @@ export default function Chat({ open, onClose, userId }: ChatProps) {
         // Auto-parse transcript for tasks/events
         setParsing(true);
         try {
+          const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+          const clientDate = new Date().toLocaleDateString("en-CA");
           const parseRes = await fetch(`${API_BASE}/api/parse-transcript`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ transcript: fullTranscript, userId }),
+            body: JSON.stringify({ transcript: fullTranscript, userId, timeZone, clientDate }),
           });
           const parseData = await parseRes.json();
           if (parseRes.ok) {
@@ -652,10 +654,12 @@ export default function Chat({ open, onClose, userId }: ChatProps) {
                             : text;
                           setTranscript(fullTranscript);
 
+                          const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+                          const clientDate = new Date().toLocaleDateString("en-CA");
                           const parseRes = await fetch(`${API_BASE}/api/parse-transcript`, {
                             method: "POST",
                             headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ transcript: fullTranscript, userId }),
+                            body: JSON.stringify({ transcript: fullTranscript, userId, timeZone, clientDate }),
                           });
                           const parseData = await parseRes.json();
                           if (parseRes.ok) {
