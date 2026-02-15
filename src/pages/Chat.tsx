@@ -1,7 +1,7 @@
 import { useRef, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
-const API_BASE = import.meta.env.VITE_API_BASE || "";
+const API_BASE = import.meta.env.VITE_API_BASE || "https://aposporic-eleanore-unquestioning.ngrok-free.dev";
 
 type RecordingState = "recording" | "paused" | "transcribing" | "review" | "text-chat";
 
