@@ -1,16 +1,18 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
-import { collection, addDoc, Timestamp } from "firebase/firestore";
+import { collection, addDoc, updateDoc, deleteDoc, doc, Timestamp } from "firebase/firestore";
 import { db } from "../../../../lib/firebase";
+import type { CalendarEvent } from "../../../../lib/useEvents";
 
 /* ── constants ── */
 
-const CATEGORIES = ["protect", "progress", "maintain"] as const;
+const CATEGORIES = ["protect", "progress", "maintain", "flourish"] as const;
 type Category = (typeof CATEGORIES)[number];
 const CATEGORY_LABELS: Record<Category, string> = {
   protect: "Protect",
   progress: "Progress",
   maintain: "Maintain",
+  flourish: "Flourish",
 };
 
 const smoothSpring = { type: "spring" as const, stiffness: 200, damping: 24, mass: 0.8 };
@@ -26,7 +28,7 @@ const SHORT_MONTHS = [
 ];
 
 type ItemType = "task" | "event";
-type PickerTarget = "startDate" | "endDate" | "dueDate" | null;
+type PickerTarget = "startDate" | "endDate" | "dueDate" | "startTime" | "endTime" | null;
 
 /* ── helpers ── */
 
@@ -192,41 +194,119 @@ function Pill({
   );
 }
 
-/* ── Time pill ── */
+/* ── Wheel time picker (iOS-style) ── */
 
-function TimePill({
+const WHEEL_ITEM_H = 28;
+const WHEEL_VISIBLE = 3;
+const WHEEL_CENTER = Math.floor(WHEEL_VISIBLE / 2);
+
+function WheelColumn({
+  items,
+  selected,
+  onSelect,
+}: {
+  items: string[];
+  selected: number;
+  onSelect: (i: number) => void;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const isScrolling = useRef(false);
+
+  useEffect(() => {
+    if (ref.current) {
+      ref.current.scrollTop = selected * WHEEL_ITEM_H;
+    }
+  }, []);
+
+  const handleScroll = useCallback(() => {
+    if (!ref.current || isScrolling.current) return;
+    const idx = Math.round(ref.current.scrollTop / WHEEL_ITEM_H);
+    const clamped = Math.max(0, Math.min(items.length - 1, idx));
+    if (clamped !== selected) onSelect(clamped);
+  }, [items.length, selected, onSelect]);
+
+  const snapTo = useCallback((idx: number) => {
+    if (!ref.current) return;
+    isScrolling.current = true;
+    ref.current.scrollTo({ top: idx * WHEEL_ITEM_H, behavior: "smooth" });
+    setTimeout(() => { isScrolling.current = false; }, 150);
+    onSelect(idx);
+  }, [onSelect]);
+
+  return (
+    <div
+      ref={ref}
+      className="relative flex-1 overflow-y-auto scrollbar-none"
+      style={{ height: WHEEL_VISIBLE * WHEEL_ITEM_H, scrollSnapType: "y mandatory" }}
+      onScroll={handleScroll}
+    >
+      <div style={{ height: WHEEL_CENTER * WHEEL_ITEM_H }} />
+      {items.map((item, i) => (
+        <div
+          key={i}
+          className={`flex items-center justify-center text-[14px] transition-all cursor-pointer ${
+            i === selected ? "font-semibold text-text-strong" : "text-text-tertiary"
+          }`}
+          style={{ height: WHEEL_ITEM_H, scrollSnapAlign: "center" }}
+          onClick={() => snapTo(i)}
+        >
+          {item}
+        </div>
+      ))}
+      <div style={{ height: WHEEL_CENTER * WHEEL_ITEM_H }} />
+    </div>
+  );
+}
+
+const WHEEL_HOURS = Array.from({ length: 12 }, (_, i) => String(i + 1));
+const WHEEL_MINUTES = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, "0"));
+const WHEEL_PERIODS = ["AM", "PM"];
+
+function WheelTimePicker({
   value,
   onChange,
 }: {
-  value: string;
+  value: string; // "HH:mm" 24h
   onChange: (v: string) => void;
 }) {
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [h, m] = value.split(":").map(Number);
+  const isPM = h >= 12;
+  const hour12 = h % 12 || 12;
 
-  const handleClick = () => {
-    try {
-      inputRef.current?.showPicker();
-    } catch {
-      inputRef.current?.focus();
-    }
+  const hourIdx = hour12 - 1;
+  const minIdx = m;
+  const periodIdx = isPM ? 1 : 0;
+
+  const update = (newHour12: number, newMin: number, newPM: boolean) => {
+    let h24 = newHour12 % 12;
+    if (newPM) h24 += 12;
+    onChange(`${String(h24).padStart(2, "0")}:${String(newMin).padStart(2, "0")}`);
   };
 
   return (
-    <button
-      type="button"
-      onClick={handleClick}
-      className="relative rounded-[8px] bg-surface px-3 py-[6px] text-[13px] font-medium leading-5 text-text-strong"
-    >
-      {formatTime12(value)}
-      <input
-        ref={inputRef}
-        type="time"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="pointer-events-none absolute inset-0 opacity-0"
-        tabIndex={-1}
-      />
-    </button>
+    <div className="rounded-[12px] bg-white p-2 shadow-lg border border-border" style={{ width: 180 }}>
+      <div className="relative flex" style={{ height: WHEEL_VISIBLE * WHEEL_ITEM_H }}>
+        <div
+          className="pointer-events-none absolute left-0 right-0 rounded-[6px] bg-background"
+          style={{ top: WHEEL_CENTER * WHEEL_ITEM_H, height: WHEEL_ITEM_H }}
+        />
+        <WheelColumn
+          items={WHEEL_HOURS}
+          selected={hourIdx}
+          onSelect={(i) => update(i + 1, minIdx, isPM)}
+        />
+        <WheelColumn
+          items={WHEEL_MINUTES}
+          selected={minIdx}
+          onSelect={(i) => update(hour12, i, isPM)}
+        />
+        <WheelColumn
+          items={WHEEL_PERIODS}
+          selected={periodIdx}
+          onSelect={(i) => update(hour12, minIdx, i === 1)}
+        />
+      </div>
+    </div>
   );
 }
 
@@ -235,21 +315,31 @@ function TimePill({
 interface AddItemModalProps {
   userId: string;
   onClose: () => void;
+  editEvent?: CalendarEvent;
 }
 
-export function AddItemModal({ userId, onClose }: AddItemModalProps) {
-  const [title, setTitle] = useState("");
-  const [details, setDetails] = useState("");
+function toDateStr2(d: Date) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function toTimeStr(d: Date) {
+  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+}
+
+export function AddItemModal({ userId, onClose, editEvent }: AddItemModalProps) {
+  const isEdit = !!editEvent;
+  const [title, setTitle] = useState(editEvent?.title ?? "");
+  const [details, setDetails] = useState(editEvent?.description ?? "");
   const [category, setCategory] = useState<Category>("protect");
-  const [itemType, setItemType] = useState<ItemType>("task");
+  const [itemType, setItemType] = useState<ItemType>(editEvent ? "event" : "task");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
   const todayStr = new Date().toISOString().slice(0, 10);
-  const [startDate, setStartDate] = useState(todayStr);
-  const [startTime, setStartTime] = useState("09:00");
-  const [endDate, setEndDate] = useState(todayStr);
-  const [endTime, setEndTime] = useState("10:00");
+  const [startDate, setStartDate] = useState(editEvent ? toDateStr2(editEvent.start) : todayStr);
+  const [startTime, setStartTime] = useState(editEvent ? toTimeStr(editEvent.start) : "09:00");
+  const [endDate, setEndDate] = useState(editEvent ? toDateStr2(editEvent.end) : todayStr);
+  const [endTime, setEndTime] = useState(editEvent ? toTimeStr(editEvent.end) : "10:00");
   const [dueDate, setDueDate] = useState(todayStr);
 
   const [activePicker, setActivePicker] = useState<PickerTarget>(null);
@@ -285,16 +375,25 @@ export function AddItemModal({ userId, onClose }: AddItemModalProps) {
           return;
         }
 
-        await addDoc(collection(db, "users", userId, "events"), {
-          title: title.trim(),
-          description: details.trim(),
-          start: Timestamp.fromDate(startDt),
-          end: Timestamp.fromDate(endDt),
-          location: "",
-          allDay: false,
-          source: "manual",
-          createdAt: Timestamp.now(),
-        });
+        if (editEvent) {
+          await updateDoc(doc(db, "users", userId, "events", editEvent.id), {
+            title: title.trim(),
+            description: details.trim(),
+            start: Timestamp.fromDate(startDt),
+            end: Timestamp.fromDate(endDt),
+          });
+        } else {
+          await addDoc(collection(db, "users", userId, "events"), {
+            title: title.trim(),
+            description: details.trim(),
+            start: Timestamp.fromDate(startDt),
+            end: Timestamp.fromDate(endDt),
+            location: "",
+            allDay: false,
+            source: "manual",
+            createdAt: Timestamp.now(),
+          });
+        }
       }
       onClose();
     } catch (err: any) {
@@ -302,6 +401,17 @@ export function AddItemModal({ userId, onClose }: AddItemModalProps) {
       setError(err.message || "Failed to save.");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!editEvent) return;
+    try {
+      await deleteDoc(doc(db, "users", userId, "events", editEvent.id));
+      onClose();
+    } catch (err: any) {
+      console.error("Failed to delete:", err);
+      setError(err.message || "Failed to delete.");
     }
   };
 
@@ -328,7 +438,7 @@ export function AddItemModal({ userId, onClose }: AddItemModalProps) {
             <button type="button" onClick={onClose} className="text-[15px] leading-5 text-text-secondary">
               Cancel
             </button>
-            <span className="text-[15px] font-semibold text-text-strong">New</span>
+            <span className="text-[15px] font-semibold text-text-strong">{isEdit ? "Edit" : "New"}</span>
             <button
               type="button"
               onClick={handleSave}
@@ -339,32 +449,34 @@ export function AddItemModal({ userId, onClose }: AddItemModalProps) {
             </button>
           </div>
 
-          {/* Type toggle */}
-          <div className="mt-4">
-            <LayoutGroup id="type-toggle">
-              <div className="flex rounded-[10px] bg-background p-[3px]">
-                {(["task", "event"] as const).map((t) => (
-                  <button
-                    key={t}
-                    type="button"
-                    onClick={() => { setItemType(t); setActivePicker(null); }}
-                    className="relative flex-1 rounded-[8px] py-[6px] text-center text-[13px] leading-5 outline-none"
-                  >
-                    {itemType === t && (
-                      <motion.div
-                        layoutId="type-pill"
-                        className="absolute inset-0 rounded-[8px] bg-surface shadow-subtle"
-                        transition={smoothSpring}
-                      />
-                    )}
-                    <span className={`relative z-10 ${itemType === t ? "text-text-strong font-medium" : "text-text-secondary"}`}>
-                      {t === "task" ? "Task" : "Event"}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </LayoutGroup>
-          </div>
+          {/* Type toggle (hidden in edit mode) */}
+          {!isEdit && (
+            <div className="mt-4">
+              <LayoutGroup id="type-toggle">
+                <div className="flex rounded-[10px] bg-background p-[3px]">
+                  {(["task", "event"] as const).map((t) => (
+                    <button
+                      key={t}
+                      type="button"
+                      onClick={() => { setItemType(t); setActivePicker(null); }}
+                      className="relative flex-1 rounded-[8px] py-[6px] text-center text-[13px] leading-5 outline-none"
+                    >
+                      {itemType === t && (
+                        <motion.div
+                          layoutId="type-pill"
+                          className="absolute inset-0 rounded-[8px] bg-surface shadow-subtle"
+                          transition={smoothSpring}
+                        />
+                      )}
+                      <span className={`relative z-10 ${itemType === t ? "text-text-strong font-medium" : "text-text-secondary"}`}>
+                        {t === "task" ? "Task" : "Event"}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </LayoutGroup>
+            </div>
+          )}
 
           {/* Title + Details card */}
           <div className="mt-4 rounded-[16px] bg-background px-4 py-3">
@@ -389,10 +501,16 @@ export function AddItemModal({ userId, onClose }: AddItemModalProps) {
           )}
 
           {/* Date / time section */}
-          <div className="mt-4 rounded-[16px] bg-background px-4">
+          <AnimatePresence mode="wait" initial={false}>
             {itemType === "task" ? (
-              /* ── Task: single due date row ── */
-              <>
+              <motion.div
+                key="task-fields"
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={{ duration: 0.2, ease: "easeInOut" }}
+                className="mt-4 rounded-[16px] bg-background px-4"
+              >
                 <div className="flex items-center justify-between py-3">
                   <span className="text-[15px] text-text-strong">Due date</span>
                   <Pill
@@ -407,11 +525,16 @@ export function AddItemModal({ userId, onClose }: AddItemModalProps) {
                     <InlineDatePicker value={dueDate} onChange={(d) => { setDueDate(d); setActivePicker(null); }} />
                   </>
                 )}
-              </>
+              </motion.div>
             ) : (
-              /* ── Event: Starts / Ends rows (Apple Calendar style) ── */
-              <>
-                {/* Starts row */}
+              <motion.div
+                key="event-fields"
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={{ duration: 0.2, ease: "easeInOut" }}
+                className="mt-4 rounded-[16px] bg-background px-4"
+              >
                 {/* Starts row */}
                 <div className="flex items-center justify-between py-3">
                   <span className="text-[15px] text-text-strong">Starts</span>
@@ -421,7 +544,18 @@ export function AddItemModal({ userId, onClose }: AddItemModalProps) {
                       isActive={activePicker === "startDate"}
                       onClick={() => togglePicker("startDate")}
                     />
-                    <TimePill value={startTime} onChange={setStartTime} />
+                    <div className="relative">
+                      <Pill
+                        label={formatTime12(startTime)}
+                        isActive={activePicker === "startTime"}
+                        onClick={() => togglePicker("startTime")}
+                      />
+                      {activePicker === "startTime" && (
+                        <div className="absolute right-0 top-full z-20 mt-1">
+                          <WheelTimePicker value={startTime} onChange={setStartTime} />
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -444,7 +578,18 @@ export function AddItemModal({ userId, onClose }: AddItemModalProps) {
                       isActive={activePicker === "endDate"}
                       onClick={() => togglePicker("endDate")}
                     />
-                    <TimePill value={endTime} onChange={setEndTime} />
+                    <div className="relative">
+                      <Pill
+                        label={formatTime12(endTime)}
+                        isActive={activePicker === "endTime"}
+                        onClick={() => togglePicker("endTime")}
+                      />
+                      {activePicker === "endTime" && (
+                        <div className="absolute right-0 top-full z-20 mt-1">
+                          <WheelTimePicker value={endTime} onChange={setEndTime} />
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -455,39 +600,52 @@ export function AddItemModal({ userId, onClose }: AddItemModalProps) {
                     <InlineDatePicker value={endDate} onChange={(d) => { setEndDate(d); setActivePicker(null); }} />
                   </>
                 )}
-              </>
+              </motion.div>
             )}
-          </div>
+          </AnimatePresence>
 
-          {/* Priority selector */}
-          <div className="mt-4 rounded-[16px] bg-background px-4 py-3">
-            <p className="text-[13px] leading-4 text-text-tertiary mb-3">
-              How should we prioritize this item?
-            </p>
-            <LayoutGroup id="priority-pills">
-              <div className="flex gap-2">
-                {CATEGORIES.map((cat) => (
-                  <button
-                    key={cat}
-                    type="button"
-                    onClick={() => setCategory(cat)}
-                    className="relative shrink-0 rounded-full px-[16px] py-[7px] text-[14px] leading-5 outline-none transition-colors duration-200"
-                  >
-                    {category === cat && (
-                      <motion.div
-                        layoutId="priority-pill"
-                        className="absolute inset-0 rounded-full border border-border bg-surface"
-                        transition={smoothSpring}
-                      />
-                    )}
-                    <span className={`relative z-10 ${category === cat ? "text-text-strong" : "text-text-secondary"}`}>
-                      {CATEGORY_LABELS[cat]}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </LayoutGroup>
-          </div>
+          {/* Delete button (edit mode only) */}
+          {isEdit && (
+            <button
+              type="button"
+              onClick={handleDelete}
+              className="mt-4 w-full rounded-[16px] bg-background py-3 text-[15px] font-medium text-red-500"
+            >
+              Delete Event
+            </button>
+          )}
+
+          {/* Priority selector (hidden in edit mode since events don't have categories) */}
+          {!isEdit && (
+            <div className="mt-4 rounded-[16px] bg-background px-4 py-3">
+              <p className="text-[13px] leading-4 text-text-tertiary mb-3">
+                How should we prioritize this item?
+              </p>
+              <LayoutGroup id="priority-pills">
+                <div className="flex gap-2">
+                  {CATEGORIES.map((cat) => (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() => setCategory(cat)}
+                      className="relative shrink-0 rounded-full px-[16px] py-[7px] text-[14px] leading-5 outline-none transition-colors duration-200"
+                    >
+                      {category === cat && (
+                        <motion.div
+                          layoutId="priority-pill"
+                          className="absolute inset-0 rounded-full border border-border bg-surface"
+                          transition={smoothSpring}
+                        />
+                      )}
+                      <span className={`relative z-10 ${category === cat ? "text-text-strong" : "text-text-secondary"}`}>
+                        {CATEGORY_LABELS[cat]}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </LayoutGroup>
+            </div>
+          )}
         </motion.div>
       </motion.div>
     </AnimatePresence>

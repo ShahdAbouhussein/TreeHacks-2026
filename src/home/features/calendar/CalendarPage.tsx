@@ -2,6 +2,7 @@ import { useState, useMemo, useRef, useCallback } from "react";
 import { AnimatePresence, motion, type PanInfo } from "framer-motion";
 import { ViewDropdown, type CalendarView } from "./ViewDropdown";
 import type { CalendarEvent } from "../../../lib/useEvents";
+import { AddItemModal } from "../home/components/AddItemModal";
 
 const DAY_LABELS = ["Sun", "Mon", "Tues", "Wed", "Thurs", "Fri", "Sat"];
 
@@ -82,9 +83,13 @@ function weekKeyFor(date: Date) {
 
 // ── sub-components ──
 
-function CommitmentItem({ commitment }: { commitment: Commitment }) {
+function CommitmentItem({ commitment, onClick }: { commitment: Commitment; onClick?: () => void }) {
   return (
-    <div className="flex min-h-[52px] items-center justify-between rounded-[2px] py-[14px] pl-[16px] pr-[16px]" style={{ backgroundColor: "#F7F7F7", borderLeft: "3px solid #6F8F7A" }}>
+    <div
+      className={`flex min-h-[52px] items-center justify-between rounded-[2px] py-[14px] pl-[16px] pr-[16px]${onClick ? " cursor-pointer" : ""}`}
+      style={{ backgroundColor: "#F7F7F7", borderLeft: "3px solid #6F8F7A" }}
+      onClick={onClick}
+    >
       <span className="text-[15px] font-medium leading-5 text-text-strong">
         {commitment.title}
       </span>
@@ -210,9 +215,17 @@ function WeekStrip({
   );
 }
 
-function TimeSlots({ events = [] }: { events?: CalendarEvent[] }) {
+function formatTime12(date: Date): string {
+  const h = date.getHours();
+  const m = date.getMinutes();
+  const suffix = h >= 12 ? "PM" : "AM";
+  const hour12 = h % 12 || 12;
+  return m === 0 ? `${hour12} ${suffix}` : `${hour12}:${m.toString().padStart(2, "0")} ${suffix}`;
+}
+
+function TimeSlots({ events = [], onEventPress }: { events?: CalendarEvent[]; onEventPress?: (eventId: string) => void }) {
   const slotHeight = 44;
-  const startHourOffset = 0; // starts at midnight
+  const startHourOffset = 0;
 
   return (
     <div className="mt-md relative flex flex-col overflow-y-auto max-h-[400px]">
@@ -231,14 +244,24 @@ function TimeSlots({ events = [] }: { events?: CalendarEvent[] }) {
         const top = (startHour - startHourOffset) * slotHeight;
         const height = duration * slotHeight;
         if (top < 0 || top >= TIME_SLOTS.length * slotHeight) return null;
+        const timeRange = `${formatTime12(e.start)} \u2013 ${formatTime12(e.end)}`;
         return (
           <div
             key={e.id}
-            className="absolute left-[52px] right-[4px] rounded-[8px] bg-accent/15 border-l-[3px] border-accent px-[10px] py-[6px] overflow-hidden"
-            style={{ top, height: Math.min(height, TIME_SLOTS.length * slotHeight - top) }}
+            className={`absolute left-[52px] right-[4px] flex items-center justify-between overflow-hidden rounded-[2px] px-[14px] py-[8px]${onEventPress ? " cursor-pointer" : ""}`}
+            style={{
+              top,
+              height: Math.min(height, TIME_SLOTS.length * slotHeight - top) - 3,
+              backgroundColor: "#F7F7F7",
+              borderLeft: "3px solid #6F8F7A",
+            }}
+            onClick={() => onEventPress?.(e.id)}
           >
-            <span className="text-[13px] font-medium leading-4 text-text-strong truncate block">
+            <span className="text-[15px] font-medium leading-5 text-text-strong truncate">
               {e.title}
+            </span>
+            <span className="text-[13px] leading-4 text-gray-400 whitespace-nowrap ml-[8px]">
+              {timeRange}
             </span>
           </div>
         );
@@ -289,9 +312,10 @@ const NAV_ITEMS: { id: string; icon: keyof typeof navIcons }[] = [
 
 // ── main component ──
 
-export default function CalendarPage({ onBack, events = [], onNavPress }: CalendarPageProps) {
+export default function CalendarPage({ onBack, events = [], userId, onNavPress }: CalendarPageProps) {
   const now = new Date();
   const [view, setView] = useState<CalendarView>("month");
+  const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
   const [currentYear, setCurrentYear] = useState(now.getFullYear());
   const [currentMonth, setCurrentMonth] = useState(now.getMonth());
   const [selectedDay, setSelectedDay] = useState(now.getDate());
@@ -460,12 +484,12 @@ export default function CalendarPage({ onBack, events = [], onNavPress }: Calend
     }));
   }, [filteredEvents]);
 
-  const monthName = getMonthName(currentMonth);
+  const handleEventPress = useCallback((eventId: string) => {
+    const found = events.find((e) => e.id === eventId);
+    if (found) setEditingEvent(found);
+  }, [events]);
 
-  const subtitle =
-    view === "week"
-      ? `${weekStart.getDate()}-${weekEnd.getDate()}`
-      : undefined;
+  const monthName = getMonthName(currentMonth);
 
   const commitmentsLabel =
     view === "month" ? "This month\u2019s commitments" : "Upcoming this week";
@@ -484,7 +508,7 @@ export default function CalendarPage({ onBack, events = [], onNavPress }: Calend
         : `day-${currentYear}-${currentMonth}-${selectedDay}`;
 
   return (
-    <div className="relative mx-auto min-h-screen max-w-[402px] bg-background">
+    <div className="relative mx-auto max-w-[402px] bg-background">
       {/* Back button */}
       <div className="flex items-center justify-between px-lg pt-[52px]">
         <button
@@ -506,20 +530,15 @@ export default function CalendarPage({ onBack, events = [], onNavPress }: Calend
         <ViewDropdown value={view} onChange={setView} />
       </div>
 
-      {/* Month title */}
-      <div className="mt-md px-lg">
+      {/* Title + nav arrows */}
+      <div className="mt-xl px-lg">
         <h1 className="font-serif text-[28px] leading-[34px] tracking-[-0.3px] text-text-strong">
           {monthName} {currentYear}
-          {subtitle && (
-            <span className="ml-[6px] font-sans text-[15px] font-normal leading-5 tracking-normal text-text-secondary">
-              {subtitle}
-            </span>
-          )}
         </h1>
       </div>
 
       {/* Calendar content with swipe navigation — overflow-hidden keeps animations clipped */}
-      <div className="relative mt-lg overflow-hidden">
+      <div className="relative mt-xl overflow-hidden">
         <AnimatePresence mode="wait" initial={false} custom={swipeDirection}>
           <motion.div
             key={animKey}
@@ -533,10 +552,10 @@ export default function CalendarPage({ onBack, events = [], onNavPress }: Calend
             animate="center"
             exit="exit"
             transition={{ duration: 0.35, ease: [0.25, 0.1, 0.25, 1] }}
-            drag="x"
+            drag={view === "month" ? "x" : false}
             dragConstraints={{ left: 0, right: 0 }}
             dragElastic={0.2}
-            onDragEnd={handleCalendarDragEnd}
+            onDragEnd={view === "month" ? handleCalendarDragEnd : undefined}
             className="px-lg touch-pan-y"
           >
             {view === "month" && (
@@ -555,11 +574,11 @@ export default function CalendarPage({ onBack, events = [], onNavPress }: Calend
                   selectedDay={selectedDay}
                   onSelectDay={setSelectedDay}
                 />
-                <TimeSlots events={dayEvents} />
+                <TimeSlots events={dayEvents} onEventPress={handleEventPress} />
               </>
             )}
 
-            {view === "day" && <TimeSlots events={dayEvents} />}
+            {view === "day" && <TimeSlots events={dayEvents} onEventPress={handleEventPress} />}
           </motion.div>
         </AnimatePresence>
       </div>
@@ -586,17 +605,17 @@ export default function CalendarPage({ onBack, events = [], onNavPress }: Calend
         <motion.div
           animate={{ opacity: sheetSnap === "closed" ? 0 : 1 }}
           transition={{ duration: 0.15 }}
-          className="mx-auto max-w-[402px] overflow-y-auto px-lg pb-24"
+          className="mx-auto max-w-[402px] overflow-y-auto px-xl pb-24 pt-md"
           style={{ maxHeight: "calc(100% - 36px)", pointerEvents: sheetSnap === "closed" ? "none" : "auto" }}
         >
-          <h2 className="mb-[16px] text-[16px] font-medium leading-5 text-text-strong">
+          <h2 className="mb-[16px] font-serif text-[20px] leading-6 tracking-[-0.2px] text-text-strong">
             {commitmentsLabel}
           </h2>
 
           <div className="flex flex-col gap-[10px]">
             {commitments.length > 0 ? (
               commitments.map((c) => (
-                <CommitmentItem key={c.id} commitment={c} />
+                <CommitmentItem key={c.id} commitment={c} onClick={() => handleEventPress(c.id)} />
               ))
             ) : (
               <p className="text-[13px] leading-4 text-text-tertiary">No events</p>
@@ -630,6 +649,14 @@ export default function CalendarPage({ onBack, events = [], onNavPress }: Calend
           );
         })}
       </nav>
+
+      {editingEvent && userId && (
+        <AddItemModal
+          userId={userId}
+          editEvent={editingEvent}
+          onClose={() => setEditingEvent(null)}
+        />
+      )}
     </div>
   );
 }
