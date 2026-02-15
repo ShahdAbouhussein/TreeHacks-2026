@@ -103,6 +103,41 @@ app.post("/api/parse-transcript", async (req: Request, res: Response) => {
       ? clientDate
       : undefined;
   const today = clientToday || formatDateInTimeZone(new Date(), tz);
+  const weekdayNames = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+
+  const extractSingleWeekday = (text: string) => {
+    const lower = text.toLowerCase();
+    const found = new Set<number>();
+    weekdayNames.forEach((name, idx) => {
+      const re = new RegExp(`\\b${name}\\b`, "i");
+      if (re.test(lower)) found.add(idx);
+    });
+    if (found.size !== 1) return null;
+    return Array.from(found)[0];
+  };
+
+  const hasExplicitDate = (text: string) => {
+    const lower = text.toLowerCase();
+    if (/\b\d{4}-\d{2}-\d{2}\b/.test(text)) return true;
+    if (/\b\d{1,2}\/\d{1,2}(\/\d{2,4})?\b/.test(text)) return true;
+    if (/\b\d{1,2}(st|nd|rd|th)\b/.test(lower)) return true;
+    if (/\b(jan|january|feb|february|mar|march|apr|april|may|jun|june|jul|july|aug|august|sep|sept|september|oct|october|nov|november|dec|december)\b/.test(lower)) {
+      return true;
+    }
+    return false;
+  };
+
+  const toYmd = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
+  const resolveWeekdayDate = (base: Date, weekday: number, isNext: boolean) => {
+    const baseDay = base.getDay();
+    let delta = (weekday - baseDay + 7) % 7;
+    if (isNext && delta === 0) delta = 7;
+    const result = new Date(base);
+    result.setDate(base.getDate() + delta);
+    return result;
+  };
 
   try {
     // Fetch existing items so GPT can match deletion requests
@@ -150,6 +185,41 @@ If no items found for any category, return empty arrays.`,
     });
 
     const parsed = JSON.parse(completion.choices[0].message.content || "{}");
+
+    // Post-process: fix mismatched weekday resolutions (e.g., "Monday" -> wrong date)
+    const weekday = extractSingleWeekday(transcript);
+    if (weekday !== null && !hasExplicitDate(transcript)) {
+      const base = new Date(`${today}T00:00:00`);
+      const lower = transcript.toLowerCase();
+      const weekdayName = weekdayNames[weekday];
+      const isNext = new RegExp(`\\bnext\\s+${weekdayName}\\b`, "i").test(lower);
+      const targetDate = resolveWeekdayDate(base, weekday, isNext);
+
+      if (Array.isArray(parsed.events)) {
+        parsed.events = parsed.events.map((event: any) => {
+          if (!event?.start || !event?.end) return event;
+          const start = new Date(event.start);
+          const end = new Date(event.end);
+          if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return event;
+          if (start.getDay() === weekday) return event;
+          const durationMs = end.getTime() - start.getTime();
+          const fixedStart = new Date(start);
+          fixedStart.setFullYear(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate());
+          const fixedEnd = new Date(fixedStart.getTime() + durationMs);
+          return { ...event, start: fixedStart.toISOString(), end: fixedEnd.toISOString() };
+        });
+      }
+
+      if (Array.isArray(parsed.tasks)) {
+        parsed.tasks = parsed.tasks.map((task: any) => {
+          if (!task?.dueDate) return task;
+          const due = new Date(`${task.dueDate}T00:00:00`);
+          if (Number.isNaN(due.getTime())) return task;
+          if (due.getDay() === weekday) return task;
+          return { ...task, dueDate: toYmd(targetDate) };
+        });
+      }
+    }
 
     res.json({
       tasks: parsed.tasks || [],
