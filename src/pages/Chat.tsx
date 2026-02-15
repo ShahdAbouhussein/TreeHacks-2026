@@ -1,5 +1,7 @@
 import { useRef, useState } from "react";
 
+const API_BASE = import.meta.env.VITE_API_BASE || "";
+
 export default function Chat() {
   const [recording, setRecording] = useState(false);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
@@ -96,7 +98,7 @@ export default function Chat() {
     formData.append("audio", audioBlob);
 
     try {
-      const res = await fetch("api/transcribe", {
+      const res = await fetch(`${API_BASE}/api/transcribe`, {
         method: "POST",
         body: formData,
       });
