@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { EventItem } from "./EventItem";
 
 interface Event {
@@ -17,67 +17,41 @@ interface TimeSlot {
 interface EventListProps {
   timeSlots: TimeSlot[];
   events: Event[];
-}
-
-function useCurrentTime() {
-  const [now, setNow] = useState(() => new Date());
-  useEffect(() => {
-    const id = setInterval(() => setNow(new Date()), 60_000);
-    return () => clearInterval(id);
-  }, []);
-  return now;
+  scrollKey?: number;
 }
 
 export function EventList({ timeSlots, events }: EventListProps) {
   const startHour = timeSlots[0]?.hour ?? 0;
-  const slotHeight = 40; // px per hour slot
+  const slotHeight = 40;
   const totalHeight = timeSlots.length * slotHeight;
   const scrollRef = useRef<HTMLDivElement>(null);
-  const now = useCurrentTime();
-  const currentFractionalHour = now.getHours() + now.getMinutes() / 60;
-  const nowTop = (currentFractionalHour - startHour) * slotHeight;
 
-  // Auto-scroll to current time on mount
   useEffect(() => {
     if (scrollRef.current) {
-      const scrollTo = Math.max(nowTop - 80, 0);
-      scrollRef.current.scrollTop = scrollTo;
+      scrollRef.current.scrollTop = 0;
     }
   }, []);
 
   return (
     <section aria-label="Daily schedule" className="relative">
-      <div ref={scrollRef} className="overflow-y-auto max-h-[270px] px-[16px] py-[12px]">
+      <div className="mx-[16px] border-t border-gray-200" />
+      <div ref={scrollRef} className="overflow-y-auto max-h-[270px] px-[16px] py-[8px]">
         <div className="relative" style={{ height: totalHeight }}>
-          {/* Time labels */}
-          {timeSlots.map((slot) => {
-            const isCurrentHour = slot.hour === now.getHours();
-            return (
-              <div
-                key={slot.hour}
-                className="absolute left-0 flex w-[48px] items-start"
-                style={{
-                  top: (slot.hour - startHour) * slotHeight,
-                  height: slotHeight,
-                }}
-              >
-                <span className={`text-[12px] leading-4 ${isCurrentHour ? "font-semibold text-accent" : "text-text-tertiary"}`}>
-                  {slot.label}
-                </span>
-              </div>
-            );
-          })}
+          {timeSlots.map((slot) => (
+            <div
+              key={slot.hour}
+              className="absolute left-0 flex w-[52px] items-start"
+              style={{
+                top: (slot.hour - startHour) * slotHeight,
+                height: slotHeight,
+              }}
+            >
+              <span className="text-[14px] leading-5 text-text-secondary">
+                {slot.label}
+              </span>
+            </div>
+          ))}
 
-          {/* Current time indicator */}
-          <div
-            className="absolute left-[48px] right-0 flex items-center z-10"
-            style={{ top: nowTop }}
-          >
-            <div className="h-[6px] w-[6px] rounded-full bg-accent -ml-[3px]" />
-            <div className="flex-1 h-[1.5px] bg-accent" />
-          </div>
-
-          {/* Events */}
           {events.map((event) => (
             <div
               key={event.id}
@@ -94,13 +68,13 @@ export function EventList({ timeSlots, events }: EventListProps) {
       </div>
       {/* Subtle top fade */}
       <div
-        className="pointer-events-none absolute top-0 left-0 right-0 h-[40px] z-10"
-        style={{ background: "linear-gradient(to top, rgba(255,255,255,0), rgba(255,255,255,0.97))" }}
+        className="pointer-events-none absolute top-0 left-0 right-0 h-[24px] z-10"
+        style={{ background: "linear-gradient(to top, rgba(255,255,255,0), rgba(255,255,255,0.58))" }}
       />
       {/* Subtle bottom fade */}
       <div
-        className="pointer-events-none absolute bottom-0 left-0 right-0 h-[40px] z-10"
-        style={{ background: "linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0.97))" }}
+        className="pointer-events-none absolute bottom-0 left-0 right-0 h-[24px] z-10"
+        style={{ background: "linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0.58))" }}
       />
     </section>
   );

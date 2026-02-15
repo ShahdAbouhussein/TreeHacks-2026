@@ -12,3 +12,6 @@ admin.initializeApp({
 });
 
 export const adminAuth = admin.auth();
+export const adminDb = admin.firestore();
+export const FieldValue = admin.firestore.FieldValue;
+export const Timestamp = admin.firestore.Timestamp;

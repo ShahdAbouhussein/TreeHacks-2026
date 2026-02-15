@@ -84,11 +84,11 @@ function weekKeyFor(date: Date) {
 
 function CommitmentItem({ commitment }: { commitment: Commitment }) {
   return (
-    <div className="flex min-h-[52px] items-center justify-between border-l-[3px] border-[#8A9A8A] bg-subtle-fill py-[14px] pl-[16px] pr-[16px] rounded-r-[8px]">
+    <div className="flex min-h-[52px] items-center justify-between rounded-[2px] py-[14px] pl-[16px] pr-[16px]" style={{ backgroundColor: "#F7F7F7", borderLeft: "3px solid #6F8F7A" }}>
       <span className="text-[15px] font-medium leading-5 text-text-strong">
         {commitment.title}
       </span>
-      <span className="text-[13px] leading-4 text-text-secondary">
+      <span className="text-[13px] leading-4 text-gray-400 whitespace-nowrap ml-[8px]">
         {commitment.dueDate}
       </span>
     </div>
@@ -589,7 +589,7 @@ export default function CalendarPage({ onBack, events = [], onNavPress }: Calend
           className="mx-auto max-w-[402px] overflow-y-auto px-lg pb-24"
           style={{ maxHeight: "calc(100% - 36px)", pointerEvents: sheetSnap === "closed" ? "none" : "auto" }}
         >
-          <h2 className="mb-[16px] text-[17px] font-semibold leading-6 text-text-strong">
+          <h2 className="mb-[16px] text-[16px] font-medium leading-5 text-text-strong">
             {commitmentsLabel}
           </h2>
 

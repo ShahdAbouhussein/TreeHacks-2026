@@ -32,7 +32,7 @@ export function TaskCard({ title, dueDate, category, onDismiss }: TaskCardProps)
   const categoryLabel = category ? CATEGORY_LABELS[category] || category : null;
 
   return (
-    <article className="relative flex w-[200px] h-[220px] shrink-0 flex-col justify-between rounded-[20px] bg-surface px-[18px] pt-[18px] pb-[18px] shadow-subtle">
+    <article className="relative flex w-[200px] h-[220px] shrink-0 flex-col justify-between rounded-[12px] bg-surface px-[18px] pt-[18px] pb-[18px] shadow-subtle">
       {/* Dismiss button — top right */}
       <button
         type="button"
@@ -53,18 +53,18 @@ export function TaskCard({ title, dueDate, category, onDismiss }: TaskCardProps)
       {/* Top section */}
       <div>
         {dueLabel && (
-          <span className="text-[13px] leading-4 text-text-secondary">
+          <span className="text-[12px] leading-4 text-text-secondary">
             {dueLabel}
           </span>
         )}
-        <h3 className="mt-[4px] pr-8 text-[19px] font-bold leading-6 text-text-strong">
+        <h3 className="mt-[4px] pr-8 text-[16px] font-medium leading-5 text-text-strong">
           {title}
         </h3>
       </div>
 
       {/* Bottom — category pill */}
       {categoryLabel && (
-        <span className="inline-flex w-fit items-center rounded-full bg-accent px-[16px] py-[6px] text-[13px] font-medium leading-5 text-white">
+        <span className="inline-flex h-[20px] w-fit items-center rounded-full bg-accent px-[12px] text-[12px] font-normal leading-none text-white">
           {categoryLabel}
         </span>
       )}
