@@ -6,6 +6,7 @@ interface Task {
   dueDate: string;
   description: string;
   tag: string;
+  category?: string;
 }
 
 interface TasksSectionProps {
@@ -45,6 +46,7 @@ export function TasksSection({ tasks, onSeeAll }: TasksSectionProps) {
             dueDate={task.dueDate}
             description={task.description}
             tag={task.tag}
+            category={task.category}
           />
         ))}
       </div>
