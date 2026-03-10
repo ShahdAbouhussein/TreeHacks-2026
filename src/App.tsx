@@ -151,10 +151,10 @@ export default function App() {
         <div className="flex min-h-screen items-center justify-center bg-background">
           <div className="w-full max-w-[402px] px-lg">
             <KaliLogo />
-            <p className="mt-3 text-[14px] font-semibold leading-5 text-text-secondary">
+            <p className="mt-3 text-secondary leading-secondary font-semibold text-text-secondary">
               Welcome to Kali!
             </p>
-            <h1 className="mt-1 font-serif text-[30px] leading-[36px] tracking-[-0.3px] text-text-strong">
+            <h1 className="mt-1 font-serif text-display leading-display tracking-[-0.3px] text-text-strong">
               Let's get you organized.
             </h1>
 
@@ -162,14 +162,14 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => { setIsLogin(true); setStep(1); setAuthError(""); }}
-                className="flex h-14 w-full items-center justify-center rounded-[8px] bg-surface text-[15px] font-medium text-text-strong transition-colors hover:bg-subtle-fill"
+                className="flex h-14 w-full items-center justify-center rounded-[8px] bg-surface text-secondary leading-secondary font-medium text-text-strong transition-colors hover:bg-subtle-fill"
               >
                 Sign in with email
               </button>
               <button
                 type="button"
                 onClick={() => { setIsLogin(false); setStep(1); setAuthError(""); }}
-                className="text-[15px] leading-5 text-accent"
+                className="text-secondary leading-secondary text-accent"
               >
                 I don't have an account
               </button>
@@ -185,16 +185,16 @@ export default function App() {
         <div className="relative flex min-h-screen items-center justify-center bg-background">
           <BackChevron onClick={() => { setStep(0); setAuthError(""); }} />
           <div className="w-full max-w-[402px] px-lg">
-            <h1 className="font-serif text-[40px] leading-[44px] tracking-[-0.3px] text-text-strong">
+            <h1 className="font-serif text-display leading-display tracking-[-0.3px] text-text-strong">
               {isLogin ? "Sign in" : "Sign up"}
             </h1>
-            <p className="mt-3 text-[16px] leading-6 text-text-strong">
+            <p className="mt-3 text-body leading-body text-text-strong">
               Use your email to import your calendar data and enjoy a smooth experience with Kali.
             </p>
 
             <div className="mt-8">
               <input
-                className="h-14 w-full rounded-[12px] bg-surface px-5 text-[16px] leading-5 text-text-strong placeholder:text-text-tertiary focus:outline-none"
+                className="h-14 w-full rounded-[12px] bg-surface px-5 text-body leading-body text-text-strong placeholder:text-text-tertiary focus:outline-none"
                 placeholder="Enter your email"
                 autoComplete="email"
                 value={email}
@@ -217,21 +217,21 @@ export default function App() {
         <div className="relative flex min-h-screen items-center justify-center bg-background">
           <BackChevron onClick={() => { setStep(1); setAuthError(""); }} />
           <div className="w-full max-w-[402px] px-lg">
-            <h1 className="font-serif text-[40px] leading-[44px] tracking-[-0.3px] text-text-strong">
+            <h1 className="font-serif text-display leading-display tracking-[-0.3px] text-text-strong">
               {isLogin ? "Sign in" : "Sign up"}
             </h1>
-            <p className="mt-3 text-[16px] leading-6 text-text-strong">
+            <p className="mt-3 text-body leading-body text-text-strong">
               Use your email to import your calendar data and enjoy a smooth experience with Kali.
             </p>
 
             <div className="mt-8 flex flex-col gap-3">
               <input
-                className="h-14 w-full rounded-[12px] bg-surface px-5 text-[16px] leading-5 text-text-strong placeholder:text-text-tertiary"
+                className="h-14 w-full rounded-[12px] bg-surface px-5 text-body leading-body text-text-strong placeholder:text-text-tertiary"
                 value={email}
                 readOnly
               />
               <input
-                className="h-14 w-full rounded-[12px] bg-surface px-5 text-[16px] leading-5 text-text-strong placeholder:text-text-tertiary focus:outline-none"
+                className="h-14 w-full rounded-[12px] bg-surface px-5 text-body leading-body text-text-strong placeholder:text-text-tertiary focus:outline-none"
                 placeholder="Enter your password"
                 type="password"
                 autoComplete={isLogin ? "current-password" : "new-password"}
@@ -240,7 +240,7 @@ export default function App() {
                 onKeyDown={(e) => { if (e.key === "Enter" && password) handleAuth(); }}
               />
               {authError && (
-                <p className="text-[13px] leading-4 text-red-500">{authError}</p>
+                <p className="text-caption leading-caption text-red-500">{authError}</p>
               )}
             </div>
 
@@ -258,7 +258,7 @@ export default function App() {
         <div className="relative flex min-h-screen items-center justify-center bg-background">
           <BackChevron onClick={() => { setStep(0); setAuthError(""); }} />
           <div className="w-full max-w-[402px] px-lg">
-            <p className="text-[14px] leading-5 text-text-strong max-w-[280px]">
+            <p className="text-secondary leading-secondary text-text-strong max-w-[280px]">
               The transition is easy! Simply upload your calendar via and .ics.
             </p>
 
@@ -276,7 +276,7 @@ export default function App() {
               <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#9fafa6" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M17 8l-5-5-5 5M12 3v12" />
               </svg>
-              <p className="mt-2 text-[13px] leading-5 text-text-tertiary text-center">
+              <p className="mt-2 text-caption leading-caption text-text-tertiary text-center">
                 {icsFile ? icsFile.name : ""}
               </p>
               <input
@@ -292,17 +292,17 @@ export default function App() {
             </div>
 
             {authError && (
-              <p className="mt-3 text-[13px] leading-4 text-red-500">{authError}</p>
+              <p className="mt-3 text-caption leading-caption text-red-500">{authError}</p>
             )}
             {importSuccess && (
-              <p className="mt-3 text-[13px] leading-4 font-medium" style={{ color: "#6F8F7A" }}>{importSuccess}</p>
+              <p className="mt-3 text-caption leading-caption font-medium" style={{ color: "#6F8F7A" }}>{importSuccess}</p>
             )}
 
             <div className="mt-12 flex items-center justify-between">
               <button
                 type="button"
                 onClick={() => setStep(0)}
-                className="text-[13px] leading-5 text-text-secondary"
+                className="text-caption leading-caption text-text-secondary"
               >
                 Skip for now
               </button>
@@ -393,7 +393,7 @@ export default function App() {
               <div className="relative mx-auto max-w-[402px] bg-background pb-28">
                 <header className="flex items-end justify-between px-lg pt-5xl pb-2xl">
                   <div className="flex flex-col gap-xs">
-                    <h1 className="font-serif text-[28px] leading-[34px] tracking-[-0.3px] text-text-strong">
+                    <h1 className="font-serif text-display leading-display tracking-[-0.3px] text-text-strong">
                       Profile
                     </h1>
                   </div>
@@ -403,27 +403,27 @@ export default function App() {
                   <div className="rounded-[16px] bg-surface p-2xl shadow-subtle">
                     <div className="flex items-center justify-between border-b border-divider pb-lg">
                       <div className="space-y-xs">
-                        <p className="text-[12px] uppercase tracking-[0.12em] text-text-tertiary">
+                        <p className="text-caption leading-caption uppercase tracking-[0.12em] text-text-tertiary">
                           Email
                         </p>
-                        <p className="text-[17px] leading-6 text-text-strong">
+                        <p className="text-body leading-body text-text-strong">
                           {user.email}
                         </p>
                       </div>
-                      <span className="rounded-full border border-border px-md py-xs text-[12px] leading-4 text-text-secondary">
+                      <span className="rounded-full border border-border px-md py-xs text-caption leading-caption text-text-secondary">
                         Primary
                       </span>
                     </div>
-                    <div className="pt-lg text-[14px] leading-5 text-text-secondary">
+                    <div className="pt-lg text-secondary leading-secondary text-text-secondary">
                       Member since just now.
                     </div>
                   </div>
                   <div className="rounded-[16px] bg-surface p-2xl shadow-subtle">
                     <div className="space-y-xs">
-                      <p className="text-[12px] uppercase tracking-[0.12em] text-text-tertiary">
+                      <p className="text-caption leading-caption uppercase tracking-[0.12em] text-text-tertiary">
                         Calendar
                       </p>
-                      <p className="text-[17px] leading-6 text-text-strong">
+                      <p className="text-body leading-body text-text-strong">
                         {uploadedFileName ? "Calendar uploaded" : "Upload your calendar"}
                       </p>
                     </div>
@@ -436,17 +436,17 @@ export default function App() {
                             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                             <polyline points="14 2 14 8 20 8" />
                           </svg>
-                          <span className="flex-1 truncate text-[14px] font-medium text-text-strong">
+                          <span className="flex-1 truncate text-secondary leading-secondary font-medium text-text-strong">
                             {uploadedFileName}
                           </span>
-                          <span className="text-[12px] leading-4 font-medium" style={{ color: "#6F8F7A" }}>
+                          <span className="text-caption leading-caption font-medium" style={{ color: "#6F8F7A" }}>
                             {events.length} event{events.length !== 1 ? "s" : ""}
                           </span>
                         </div>
 
                         {/* Add another file */}
                         <button
-                          className="flex h-11 w-full items-center justify-center rounded-full border border-dashed border-border text-[13px] font-medium text-text-secondary transition-colors hover:bg-subtle-fill"
+                          className="flex h-11 w-full items-center justify-center rounded-full border border-dashed border-border text-caption leading-caption font-medium text-text-secondary transition-colors hover:bg-subtle-fill"
                           onClick={() => fileInputRef.current?.click()}
                           disabled={importing}
                         >
@@ -455,7 +455,7 @@ export default function App() {
 
                         {/* Remove file & delete all events */}
                         <button
-                          className="flex h-11 w-full items-center justify-center rounded-full text-[13px] font-medium text-red-500 transition-colors hover:bg-red-50"
+                          className="flex h-11 w-full items-center justify-center rounded-full text-caption leading-caption font-medium text-red-500 transition-colors hover:bg-red-50"
                           onClick={async () => {
                             if (!user || deleting) return;
                             setDeleting(true);
@@ -487,7 +487,7 @@ export default function App() {
                     ) : (
                       <div className="mt-lg">
                         <button
-                          className="flex h-12 w-full items-center justify-center rounded-full border border-dashed border-border text-[14px] font-medium text-text-secondary transition-colors hover:bg-subtle-fill"
+                          className="flex h-12 w-full items-center justify-center rounded-full border border-dashed border-border text-secondary leading-secondary font-medium text-text-secondary transition-colors hover:bg-subtle-fill"
                           onClick={() => fileInputRef.current?.click()}
                           disabled={importing}
                         >
@@ -534,15 +534,15 @@ export default function App() {
                     />
 
                     {authError && (
-                      <p className="mt-2 text-[13px] leading-4 text-red-500">{authError}</p>
+                      <p className="mt-2 text-caption leading-caption text-red-500">{authError}</p>
                     )}
                     {importSuccess && (
-                      <p className="mt-2 text-[13px] leading-4 font-medium" style={{ color: "#6F8F7A" }}>{importSuccess}</p>
+                      <p className="mt-2 text-caption leading-caption font-medium" style={{ color: "#6F8F7A" }}>{importSuccess}</p>
                     )}
                   </div>
 
                   <button
-                    className="h-12 w-full rounded-full border border-border text-[14px] font-medium text-text-strong transition-colors hover:bg-subtle-fill"
+                    className="h-12 w-full rounded-full border border-border text-secondary leading-secondary font-medium text-text-strong transition-colors hover:bg-subtle-fill"
                     onClick={() => signOut(auth)}
                   >
                     Log out

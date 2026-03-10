@@ -320,8 +320,8 @@ export default function Chat({ open, onClose, userId }: ChatProps) {
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={{ type: "spring", damping: 28, stiffness: 300 }}
-            className="fixed inset-x-0 bottom-0 z-50 flex h-[80vh] flex-col overflow-hidden rounded-t-[24px]"
-            style={{ backgroundColor: "#FAFAFB" }}
+            className="fixed inset-x-0 bottom-0 z-50 flex flex-col overflow-hidden rounded-t-[24px]"
+            style={{ backgroundColor: "#FAFAFB", height: "calc(100vh - 140px)" }}
           >
             {/* Close button */}
             <div className="flex items-center px-5 pt-5">
@@ -379,10 +379,10 @@ export default function Chat({ open, onClose, userId }: ChatProps) {
 
                   {/* Status text */}
                   <div className="mb-8 text-center">
-                    <p className="text-[18px] font-semibold text-text-strong">
+                    <p className="text-body leading-body font-semibold text-text-strong">
                       {state === "paused" ? "Paused" : "Listening..."}
                     </p>
-                    <p className="mt-1 text-[15px] text-text-secondary">
+                    <p className="mt-1 text-secondary leading-secondary text-text-secondary">
                       {state === "paused"
                         ? "Tap play to continue recording."
                         : "Say everything you need to get done."}
@@ -480,7 +480,7 @@ export default function Chat({ open, onClose, userId }: ChatProps) {
                     }}
                     className="h-10 w-10 rounded-full border-[3px] border-white/40 border-t-accent"
                   />
-                  <p className="mt-4 text-[16px] text-text-secondary">
+                  <p className="mt-4 text-body leading-body text-text-secondary">
                     Transcribing...
                   </p>
                 </motion.div>
@@ -499,10 +499,10 @@ export default function Chat({ open, onClose, userId }: ChatProps) {
                   <div className="flex-1 overflow-y-auto px-5 pt-4 pb-4">
                     {chatMessages.length === 0 && !chatSending && (
                       <div className="flex flex-1 flex-col items-center justify-center pt-20 text-center">
-                        <p className="text-[18px] font-semibold text-text-strong">
+                        <p className="text-body leading-body font-semibold text-text-strong">
                           What's on your schedule?
                         </p>
-                        <p className="mt-1 text-[15px] text-text-secondary">
+                        <p className="mt-1 text-secondary leading-secondary text-text-secondary">
                           Type your tasks, events, or plans below.
                         </p>
                       </div>
@@ -510,7 +510,7 @@ export default function Chat({ open, onClose, userId }: ChatProps) {
                     {chatMessages.map((msg, i) => (
                       <div
                         key={i}
-                        className={`mb-3 max-w-[85%] rounded-[16px] px-4 py-3 text-[15px] leading-6 ${
+                        className={`mb-3 max-w-[85%] rounded-[16px] px-4 py-3 text-secondary leading-body ${
                           msg.role === "user"
                             ? "ml-auto bg-accent text-white"
                             : "mr-auto bg-white text-text-strong shadow-subtle"
@@ -526,7 +526,7 @@ export default function Chat({ open, onClose, userId }: ChatProps) {
                           transition={{ duration: 1.2, repeat: Infinity, ease: "linear" }}
                           className="h-4 w-4 rounded-full border-2 border-white/40 border-t-accent"
                         />
-                        <span className="text-[13px] text-text-secondary">Thinking...</span>
+                        <span className="text-caption leading-caption text-text-secondary">Thinking...</span>
                       </div>
                     )}
                     <div ref={chatEndRef} />
@@ -548,10 +548,10 @@ export default function Chat({ open, onClose, userId }: ChatProps) {
                               style={{ backgroundColor: "#F7F7F7", borderLeft: "3px solid #6F8F7A" }}
                             >
                               <div className="flex-1 min-w-0">
-                                <p className="text-[13px] leading-4 text-text-secondary">
+                                <p className="text-caption leading-caption text-text-secondary">
                                   Due {new Date(task.dueDate + "T00:00:00").toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "numeric" })}
                                 </p>
-                                <p className="mt-1 text-[15px] font-medium leading-5 text-text-strong">
+                                <p className="mt-1 text-secondary leading-secondary font-medium text-text-strong">
                                   {task.title}
                                 </p>
                               </div>
@@ -593,8 +593,8 @@ export default function Chat({ open, onClose, userId }: ChatProps) {
                               style={{ backgroundColor: "#F7F7F7", borderLeft: "3px solid #6F8F7A" }}
                             >
                               <div className="flex-1 min-w-0">
-                                <p className="text-[13px] leading-4 text-text-secondary">{timeStr}</p>
-                                <p className="mt-1 text-[15px] font-medium leading-5 text-text-strong">
+                                <p className="text-caption leading-caption text-text-secondary">{timeStr}</p>
+                                <p className="mt-1 text-secondary leading-secondary font-medium text-text-strong">
                                   {event.title}
                                 </p>
                               </div>
@@ -684,7 +684,7 @@ export default function Chat({ open, onClose, userId }: ChatProps) {
                         value={chatInput}
                         onChange={(e) => setChatInput(e.target.value)}
                         placeholder="Type your tasks or events..."
-                        className="flex-1 rounded-full bg-white px-4 py-3 text-[15px] text-text-strong shadow-subtle outline-none placeholder:text-text-tertiary"
+                        className="flex-1 rounded-full bg-white px-4 py-3 text-secondary leading-secondary text-text-strong shadow-subtle outline-none placeholder:text-text-tertiary"
                       />
                       <button
                         type="submit"
@@ -768,7 +768,7 @@ export default function Chat({ open, onClose, userId }: ChatProps) {
                         ))}
                       </div>
 
-                      <span className="ml-2 text-[13px] tabular-nums text-text-secondary">
+                      <span className="ml-2 text-caption leading-caption tabular-nums text-text-secondary">
                         {formatTime(elapsed)}
                       </span>
 
@@ -787,7 +787,7 @@ export default function Chat({ open, onClose, userId }: ChatProps) {
                     </div>
 
                     {/* Transcript */}
-                    <div className="space-y-3 text-[15px] leading-6 text-text-strong">
+                    <div className="space-y-3 text-secondary leading-body text-text-strong">
                       {transcript
                         .split(/\.\s+/)
                         .filter(Boolean)
@@ -812,7 +812,7 @@ export default function Chat({ open, onClose, userId }: ChatProps) {
                         transition={{ duration: 1.2, repeat: Infinity, ease: "linear" }}
                         className="h-4 w-4 rounded-full border-2 border-white/40 border-t-accent"
                       />
-                      <span className="text-[13px] text-text-secondary">Extracting tasks & events...</span>
+                      <span className="text-caption leading-caption text-text-secondary">Extracting tasks & events...</span>
                     </div>
                   )}
 
@@ -831,10 +831,10 @@ export default function Chat({ open, onClose, userId }: ChatProps) {
                             style={{ backgroundColor: "#F7F7F7", borderLeft: "3px solid #6F8F7A" }}
                           >
                             <div className="flex-1 min-w-0">
-                              <p className="text-[13px] leading-4 text-text-secondary">
+                              <p className="text-caption leading-caption text-text-secondary">
                                 Due {new Date(task.dueDate + "T00:00:00").toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "numeric" })}
                               </p>
-                              <p className="mt-1 text-[15px] font-medium leading-5 text-text-strong">
+                              <p className="mt-1 text-secondary leading-secondary font-medium text-text-strong">
                                 {task.title}
                               </p>
                             </div>
@@ -878,8 +878,8 @@ export default function Chat({ open, onClose, userId }: ChatProps) {
                             style={{ backgroundColor: "#F7F7F7", borderLeft: "3px solid #6F8F7A" }}
                           >
                             <div className="flex-1 min-w-0">
-                              <p className="text-[13px] leading-4 text-text-secondary">{timeStr}</p>
-                              <p className="mt-1 text-[15px] font-medium leading-5 text-text-strong">
+                              <p className="text-caption leading-caption text-text-secondary">{timeStr}</p>
+                              <p className="mt-1 text-secondary leading-secondary font-medium text-text-strong">
                                 {event.title}
                               </p>
                             </div>
@@ -921,10 +921,10 @@ export default function Chat({ open, onClose, userId }: ChatProps) {
                             style={confirmed ? { borderLeft: "3px solid #EF4444", opacity: 0.5 } : { borderLeft: "3px solid #EF4444" }}
                           >
                             <div className="flex-1 min-w-0">
-                              <p className="text-[12px] font-medium text-red-400">
+                              <p className="text-caption leading-caption font-medium text-red-400">
                                 {confirmed ? "Removed" : `Remove ${del.type}`}
                               </p>
-                              <p className="mt-1.5 text-[17px] font-bold leading-5 text-text-strong">
+                              <p className="mt-1.5 text-body leading-body font-bold text-text-strong">
                                 {del.title}
                               </p>
                             </div>
@@ -964,7 +964,7 @@ export default function Chat({ open, onClose, userId }: ChatProps) {
                   <div className="flex items-center gap-3">
                     <button
                       onClick={onClose}
-                      className="flex h-[48px] flex-1 items-center justify-center rounded-full bg-accent text-[15px] font-medium text-white transition-transform active:scale-[0.98]"
+                      className="flex h-[48px] flex-1 items-center justify-center rounded-full bg-accent text-secondary leading-secondary font-medium text-white transition-transform active:scale-[0.98]"
                     >
                       Done
                     </button>

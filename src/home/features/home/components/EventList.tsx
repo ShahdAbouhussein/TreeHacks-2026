@@ -35,7 +35,6 @@ export function EventList({ timeSlots, events, scrollKey, onEventPress }: EventL
 
   return (
     <section aria-label="Daily schedule" className="relative">
-      <div className="mx-[16px] border-t border-gray-200" />
       <div ref={scrollRef} className="overflow-y-auto max-h-[270px] px-[16px] py-[8px]">
         <div className="relative" style={{ height: totalHeight }}>
           {timeSlots.map((slot) => (
@@ -47,7 +46,7 @@ export function EventList({ timeSlots, events, scrollKey, onEventPress }: EventL
                 height: slotHeight,
               }}
             >
-              <span className="text-[14px] leading-5 text-text-secondary">
+              <span className="text-secondary leading-secondary text-text-secondary">
                 {slot.label}
               </span>
             </div>

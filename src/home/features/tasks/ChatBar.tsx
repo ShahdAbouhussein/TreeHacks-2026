@@ -28,7 +28,7 @@ export function ChatBar({ onMenuPress }: ChatBarProps) {
       <input
         type="text"
         placeholder="Chat about tasks"
-        className="h-10 flex-1 bg-transparent text-[15px] leading-5 text-text-strong placeholder:text-text-tertiary focus:outline-none"
+        className="h-10 flex-1 bg-transparent text-secondary leading-secondary text-text-strong placeholder:text-text-tertiary focus:outline-none"
         readOnly
       />
 

@@ -17,6 +17,7 @@ interface Commitment {
   id: string;
   title: string;
   dueDate: string;
+  dueTime: string;
 }
 
 interface CalendarPageProps {
@@ -62,7 +63,7 @@ function getMonthName(month: number) {
   ][month];
 }
 
-function formatEventDate(date: Date): string {
+function formatEventDateParts(date: Date): { date: string; time: string } {
   const m = date.getMonth() + 1;
   const d = date.getDate();
   const y = date.getFullYear();
@@ -71,7 +72,7 @@ function formatEventDate(date: Date): string {
   const suffix = h >= 12 ? "PM" : "AM";
   const hour12 = h % 12 || 12;
   const time = min === 0 ? `${hour12} ${suffix}` : `${hour12}:${min.toString().padStart(2, "0")} ${suffix}`;
-  return `${m}/${d}/${y} ${time}`;
+  return { date: `${m}/${d}/${y}`, time };
 }
 
 /** Compute a stable week key from a date (Sunday of that week). */
@@ -86,16 +87,17 @@ function weekKeyFor(date: Date) {
 function CommitmentItem({ commitment, onClick }: { commitment: Commitment; onClick?: () => void }) {
   return (
     <div
-      className={`flex min-h-[52px] items-center justify-between rounded-[2px] py-[14px] pl-[16px] pr-[16px]${onClick ? " cursor-pointer" : ""}`}
+      className={`flex min-h-[52px] items-center justify-between rounded-[2px] py-[14px] pl-[16px] pr-[20px]${onClick ? " cursor-pointer" : ""}`}
       style={{ backgroundColor: "#F7F7F7", borderLeft: "3px solid #6F8F7A" }}
       onClick={onClick}
     >
-      <span className="text-[15px] font-medium leading-5 text-text-strong">
+      <span className="text-secondary leading-secondary font-medium text-text-strong">
         {commitment.title}
       </span>
-      <span className="text-[13px] leading-4 text-gray-400 whitespace-nowrap ml-[8px]">
-        {commitment.dueDate}
-      </span>
+      <div className="ml-[8px] text-right whitespace-nowrap">
+        <span className="block text-caption leading-caption text-gray-400">{commitment.dueDate}</span>
+        <span className="block text-caption leading-caption text-gray-300 mt-[2px]">{commitment.dueTime}</span>
+      </div>
     </div>
   );
 }
@@ -139,7 +141,7 @@ function MonthGrid({
         {DAY_LABELS.map((label) => (
           <div
             key={label}
-            className="py-[8px] text-center text-[12px] leading-4 tracking-[0.04em] text-text-secondary"
+            className="py-[8px] text-center text-caption leading-caption tracking-[0.04em] text-text-secondary"
           >
             {label}
           </div>
@@ -151,7 +153,7 @@ function MonthGrid({
               key={i}
               type="button"
               onClick={() => cell.isCurrentMonth && onSelectDay(cell.day)}
-              className={`relative flex h-[44px] items-center justify-center text-[15px] leading-5 ${
+              className={`relative flex h-[44px] items-center justify-center text-secondary leading-secondary ${
                 cell.isCurrentMonth
                   ? "text-text-strong"
                   : "text-text-tertiary"
@@ -189,7 +191,7 @@ function WeekStrip({
       {DAY_LABELS.map((label) => (
         <div
           key={label}
-          className="py-[8px] text-center text-[12px] leading-4 tracking-[0.04em] text-text-secondary"
+          className="py-[8px] text-center text-caption leading-caption tracking-[0.04em] text-text-secondary"
         >
           {label}
         </div>
@@ -202,7 +204,7 @@ function WeekStrip({
             key={dayNum}
             type="button"
             onClick={() => onSelectDay(dayNum)}
-            className="relative flex h-[44px] items-center justify-center text-[15px] leading-5 text-text-strong"
+            className="relative flex h-[44px] items-center justify-center text-secondary leading-secondary text-text-strong"
           >
             {isSelected && (
               <span className="absolute inset-0 m-auto h-[36px] w-[36px] rounded-full bg-accent/15" />
@@ -232,7 +234,7 @@ function TimeSlots({ events = [], onEventPress }: { events?: CalendarEvent[]; on
       {TIME_SLOTS.map((slot) => (
         <div
           key={slot}
-          className="flex h-[44px] shrink-0 items-center px-[4px] text-[13px] leading-4 text-text-secondary"
+          className="flex h-[44px] shrink-0 items-center px-[4px] text-caption leading-caption text-text-secondary"
         >
           {slot}
         </div>
@@ -257,10 +259,10 @@ function TimeSlots({ events = [], onEventPress }: { events?: CalendarEvent[]; on
             }}
             onClick={() => onEventPress?.(e.id)}
           >
-            <span className="text-[15px] font-medium leading-5 text-text-strong truncate">
+            <span className="text-secondary leading-secondary font-medium text-text-strong truncate">
               {e.title}
             </span>
-            <span className="text-[13px] leading-4 text-gray-400 whitespace-nowrap ml-[8px]">
+            <span className="text-caption leading-caption text-gray-400 whitespace-nowrap ml-[8px]">
               {timeRange}
             </span>
           </div>
@@ -477,11 +479,15 @@ export default function CalendarPage({ onBack, events = [], userId, onNavPress }
 
   // Commitments for the bottom sheet
   const commitments: Commitment[] = useMemo(() => {
-    return filteredEvents.map((e) => ({
-      id: e.id,
-      title: e.title,
-      dueDate: formatEventDate(e.start),
-    }));
+    return filteredEvents.map((e) => {
+      const parts = formatEventDateParts(e.start);
+      return {
+        id: e.id,
+        title: e.title,
+        dueDate: parts.date,
+        dueTime: parts.time,
+      };
+    });
   }, [filteredEvents]);
 
   const handleEventPress = useCallback((eventId: string) => {
@@ -514,7 +520,7 @@ export default function CalendarPage({ onBack, events = [], userId, onNavPress }
         <button
           type="button"
           onClick={onBack}
-          className="flex items-center gap-[6px] text-[15px] leading-5 text-text-strong"
+          className="flex items-center gap-[6px] text-secondary leading-secondary text-text-strong"
         >
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
             <path
@@ -532,7 +538,7 @@ export default function CalendarPage({ onBack, events = [], userId, onNavPress }
 
       {/* Title + nav arrows */}
       <div className="mt-xl px-lg">
-        <h1 className="font-serif text-[28px] leading-[34px] tracking-[-0.3px] text-text-strong">
+        <h1 className="font-serif text-display leading-display tracking-[-0.3px] text-text-strong">
           {monthName} {currentYear}
         </h1>
       </div>
@@ -552,10 +558,10 @@ export default function CalendarPage({ onBack, events = [], userId, onNavPress }
             animate="center"
             exit="exit"
             transition={{ duration: 0.35, ease: [0.25, 0.1, 0.25, 1] }}
-            drag={view === "month" ? "x" : false}
+            drag="x"
             dragConstraints={{ left: 0, right: 0 }}
             dragElastic={0.2}
-            onDragEnd={view === "month" ? handleCalendarDragEnd : undefined}
+            onDragEnd={handleCalendarDragEnd}
             className="px-lg touch-pan-y"
           >
             {view === "month" && (
@@ -605,10 +611,10 @@ export default function CalendarPage({ onBack, events = [], userId, onNavPress }
         <motion.div
           animate={{ opacity: sheetSnap === "closed" ? 0 : 1 }}
           transition={{ duration: 0.15 }}
-          className="mx-auto max-w-[402px] overflow-y-auto px-xl pb-24 pt-md"
+          className="mx-auto overflow-y-auto px-6 pb-24 pt-md"
           style={{ maxHeight: "calc(100% - 36px)", pointerEvents: sheetSnap === "closed" ? "none" : "auto" }}
         >
-          <h2 className="mb-[16px] font-serif text-[20px] leading-6 tracking-[-0.2px] text-text-strong">
+          <h2 className="mb-[16px] font-serif text-title leading-title tracking-[-0.2px] text-text-strong">
             {commitmentsLabel}
           </h2>
 
@@ -618,7 +624,7 @@ export default function CalendarPage({ onBack, events = [], userId, onNavPress }
                 <CommitmentItem key={c.id} commitment={c} onClick={() => handleEventPress(c.id)} />
               ))
             ) : (
-              <p className="text-[13px] leading-4 text-text-tertiary">No events</p>
+              <p className="text-caption leading-caption text-text-tertiary">No events</p>
             )}
           </div>
         </motion.div>

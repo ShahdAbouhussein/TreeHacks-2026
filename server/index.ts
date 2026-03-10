@@ -272,6 +272,36 @@ app.post("/api/save-item", async (req: Request, res: Response) => {
   }
 });
 
+app.post("/api/daily-summary", async (req: Request, res: Response) => {
+  const { tasks, events, userName } = req.body;
+
+  if (!tasks && !events) {
+    return res.status(400).json({ error: "tasks and events are required" });
+  }
+
+  try {
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        {
+          role: "system",
+          content: `You are a warm, concise personal assistant named Kali. Given a user's tasks and calendar events for today, write a short friendly summary paragraph (2-4 sentences max) of their day ahead. Address them by name if provided. Be natural and conversational — like a friend giving a quick rundown. Don't use bullet points or lists. Don't mention times unless they're important for context. Keep it under 50 words.`,
+        },
+        {
+          role: "user",
+          content: `User name: ${userName || "there"}\n\nToday's events:\n${JSON.stringify(events || [])}\n\nToday's tasks:\n${JSON.stringify(tasks || [])}`,
+        },
+      ],
+    });
+
+    const summary = completion.choices[0].message.content || "You have a clear day ahead!";
+    res.json({ summary });
+  } catch (error: any) {
+    console.error("Daily summary error:", error.message || error);
+    res.status(500).json({ error: "Failed to generate summary", detail: error.message });
+  }
+});
+
 app.post("/api/delete-item", async (req: Request, res: Response) => {
   const { userId, type, itemId } = req.body;
 

@@ -15,19 +15,22 @@ export function TaskListItem({
 }: TaskListItemProps) {
   return (
     <article
-      className="flex w-full items-start justify-between rounded-[16px] bg-surface px-[20px] py-[18px] shadow-subtle"
+      className="flex w-full items-start justify-between rounded-[18px] bg-surface px-[20px] py-[16px]"
+      style={{ border: "1px solid rgba(150, 150, 150, 0.2)" }}
       data-category={category}
     >
       <div className="flex-1">
-        <span className="text-[12px] leading-4 tracking-[0.04em] text-text-secondary">
-          Due {dueDate}
-        </span>
-        <h3 className="mt-[4px] text-[17px] font-semibold leading-6 text-text-strong">
+        <h3 className="text-body leading-body font-medium text-text-strong pr-8">
           {title}
         </h3>
-        <p className="mt-[2px] text-[13px] leading-[18px] text-text-tertiary">
-          {description}
-        </p>
+        <span className="mt-[3px] block text-caption leading-caption text-text-secondary">
+          Due {dueDate}
+        </span>
+        {description && (
+          <p className="mt-[10px] text-caption leading-caption text-text-tertiary">
+            {description}
+          </p>
+        )}
       </div>
       <button
         type="button"

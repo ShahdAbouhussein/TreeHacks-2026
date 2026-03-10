@@ -1,0 +1,302 @@
+[
+  {
+    "Chrono Design System": {
+      "modes": {
+        "Default": {
+          "color": {
+            "red": {
+              "base": {
+                "$scopes": ["ALL_FILLS"],
+                "$type": "color",
+                "$value": "#fb2c36"
+              },
+              "border": {
+                "$scopes": ["STROKE_COLOR", "ALL_FILLS"],
+                "$type": "color",
+                "$value": "#ffe6e6"
+              },
+              "muted-fill": {
+                "$scopes": ["ALL_FILLS"],
+                "$type": "color",
+                "$value": "#fef2f2"
+              },
+              "emphasis": {
+                "$scopes": ["ALL_FILLS"],
+                "$type": "color",
+                "$value": "#9f0712"
+              }
+            },
+            "blue": {
+              "base": {
+                "$scopes": ["ALL_FILLS"],
+                "$type": "color",
+                "$value": "#3080ff"
+              },
+              "border": {
+                "$scopes": ["STROKE_COLOR", "ALL_FILLS"],
+                "$type": "color",
+                "$value": "#e0edff"
+              },
+              "muted-fill": {
+                "$scopes": ["ALL_FILLS"],
+                "$type": "color",
+                "$value": "#eff6ff"
+              },
+              "emphasis": {
+                "$scopes": ["ALL_FILLS"],
+                "$type": "color",
+                "$value": "#1b3ea7"
+              }
+            },
+            "green": {
+              "base": {
+                "$scopes": ["ALL_FILLS"],
+                "$type": "color",
+                "$value": "#00a442"
+              },
+              "border": {
+                "$scopes": ["STROKE_COLOR", "ALL_FILLS"],
+                "$type": "color",
+                "$value": "#c7f4d7"
+              },
+              "muted-fill": {
+                "$scopes": ["ALL_FILLS"],
+                "$type": "color",
+                "$value": "#e6fbec"
+              },
+              "emphasis": {
+                "$scopes": ["ALL_FILLS"],
+                "$type": "color",
+                "$value": "#0d542b"
+              }
+            },
+            "amber": {
+              "base": {
+                "$scopes": ["ALL_FILLS"],
+                "$type": "color",
+                "$value": "#f99c00"
+              },
+              "border": {
+                "$scopes": ["STROKE_COLOR", "ALL_FILLS"],
+                "$type": "color",
+                "$value": "#f5ecc4"
+              },
+              "muted-fill": {
+                "$scopes": ["ALL_FILLS"],
+                "$type": "color",
+                "$value": "#fffbeb"
+              },
+              "emphasis": {
+                "$scopes": ["ALL_FILLS"],
+                "$type": "color",
+                "$value": "#953d00"
+              }
+            },
+            "purple": {
+              "base": {
+                "$scopes": ["ALL_FILLS"],
+                "$type": "color",
+                "$value": "#ac4bff"
+              },
+              "border": {
+                "$scopes": ["STROKE_COLOR", "ALL_FILLS"],
+                "$type": "color",
+                "$value": "#f1e4fa"
+              },
+              "muted-fill": {
+                "$scopes": ["ALL_FILLS"],
+                "$type": "color",
+                "$value": "#faf5ff"
+              },
+              "emphasis": {
+                "$scopes": ["ALL_FILLS"],
+                "$type": "color",
+                "$value": "#59168b"
+              }
+            },
+            "orange": {
+              "base": {
+                "$scopes": ["ALL_FILLS"],
+                "$type": "color",
+                "$value": "#fe6e00"
+              },
+              "border": {
+                "$scopes": ["STROKE_COLOR", "ALL_FILLS"],
+                "$type": "color",
+                "$value": "#f7e4cb"
+              },
+              "muted-fill": {
+                "$scopes": ["ALL_FILLS"],
+                "$type": "color",
+                "$value": "#fff7ed"
+              },
+              "emphasis": {
+                "$scopes": ["ALL_FILLS"],
+                "$type": "color",
+                "$value": "#9f2d00"
+              }
+            },
+            "cyan": {
+              "base": {
+                "$scopes": ["ALL_FILLS"],
+                "$type": "color",
+                "$value": "#00b5bc"
+              },
+              "border": {
+                "$scopes": ["STROKE_COLOR", "ALL_FILLS"],
+                "$type": "color",
+                "$value": "#c7edef"
+              },
+              "muted-fill": {
+                "$scopes": ["ALL_FILLS"],
+                "$type": "color",
+                "$value": "#e6fafa"
+              },
+              "emphasis": {
+                "$scopes": ["ALL_FILLS"],
+                "$type": "color",
+                "$value": "#006469"
+              }
+            },
+            "bg": {
+              "base": {
+                "$scopes": ["ALL_FILLS"],
+                "$type": "color",
+                "$value": "#ffffff"
+              },
+              "primary": {
+                "$scopes": ["ALL_FILLS"],
+                "$type": "color",
+                "$value": "#ffffff"
+              },
+              "secondary": {
+                "$scopes": ["ALL_FILLS"],
+                "$type": "color",
+                "$value": "#fafafa"
+              },
+              "tertiary": {
+                "$scopes": ["ALL_FILLS"],
+                "$type": "color",
+                "$value": "#f5f5f5"
+              },
+              "quaternary": {
+                "$scopes": ["ALL_FILLS"],
+                "$type": "color",
+                "$value": "#e8e8e8"
+              },
+              "blue": {
+                "$scopes": ["ALL_FILLS"],
+                "$type": "color",
+                "$value": "#eff6ff"
+              },
+              "purple": {
+                "$scopes": ["ALL_FILLS"],
+                "$type": "color",
+                "$value": "#faf5ff"
+              },
+              "red": {
+                "$scopes": ["ALL_FILLS"],
+                "$type": "color",
+                "$value": "#fef2f2"
+              },
+              "red-hover": {
+                "$scopes": ["ALL_FILLS"],
+                "$type": "color",
+                "$value": "#fb2c36"
+              }
+            }
+          },
+          "width": {
+            "sidebar": {
+              "$scopes": ["WIDTH_HEIGHT"],
+              "$type": "float",
+              "$value": 232
+            },
+            "sidebar-collapsed": {
+              "$scopes": ["WIDTH_HEIGHT"],
+              "$type": "float",
+              "$value": 60
+            }
+          },
+          "z-index": {
+            "button": {
+              "$scopes": ["ALL_SCOPES"],
+              "$type": "float",
+              "$value": 5
+            },
+            "sidebar": {
+              "$scopes": ["ALL_SCOPES"],
+              "$type": "float",
+              "$value": 25
+            },
+            "popover": {
+              "$scopes": ["ALL_SCOPES"],
+              "$type": "float",
+              "$value": 25
+            },
+            "header": {
+              "$scopes": ["ALL_SCOPES"],
+              "$type": "float",
+              "$value": 30
+            },
+            "dropdown": {
+              "$scopes": ["ALL_SCOPES"],
+              "$type": "float",
+              "$value": 100
+            },
+            "calendar": {
+              "$scopes": ["ALL_SCOPES"],
+              "$type": "float",
+              "$value": 1000
+            },
+            "dialog": {
+              "$scopes": ["ALL_SCOPES"],
+              "$type": "float",
+              "$value": 100
+            },
+            "drawer": {
+              "$scopes": ["ALL_SCOPES"],
+              "$type": "float",
+              "$value": 1000
+            },
+            "overlay-bg": {
+              "$scopes": ["ALL_SCOPES"],
+              "$type": "float",
+              "$value": 10000
+            },
+            "overlay": {
+              "$scopes": ["ALL_SCOPES"],
+              "$type": "float",
+              "$value": 10001
+            },
+            "overlay-content": {
+              "$scopes": ["ALL_SCOPES"],
+              "$type": "float",
+              "$value": 10002
+            },
+            "onboarding-bg": {
+              "$scopes": ["ALL_SCOPES"],
+              "$type": "float",
+              "$value": 100000
+            },
+            "onboarding-content": {
+              "$scopes": ["ALL_SCOPES"],
+              "$type": "float",
+              "$value": 100001
+            },
+            "tooltip": {
+              "$scopes": ["ALL_SCOPES"],
+              "$type": "float",
+              "$value": 1000000
+            },
+            "toast": {
+              "$scopes": ["ALL_SCOPES"],
+              "$type": "float",
+              "$value": 10000000
+            }
+          }
+        }
+      }
+    }
+  }
+]

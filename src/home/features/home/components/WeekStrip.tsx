@@ -70,7 +70,7 @@ export function WeekStrip({ days, onDayPress, onNextWeek, onPrevWeek, direction 
               >
                 <div className="flex flex-col items-center justify-center">
                   <span
-                    className={`flex h-[36px] w-[36px] items-center justify-center rounded-full text-[16px] leading-6 ${
+                    className={`flex h-[36px] w-[36px] items-center justify-center rounded-full text-body leading-body ${
                       day.isSelected
                         ? "bg-[#E8ECE9] text-[#6F8F7A] font-medium"
                         : isToday
@@ -80,7 +80,7 @@ export function WeekStrip({ days, onDayPress, onNextWeek, onPrevWeek, direction 
                   >
                     {day.date}
                   </span>
-                  <span className={`text-[12px] leading-4 ${day.isSelected ? "font-medium text-[#6F8F7A]" : "text-text-secondary"}`}>
+                  <span className={`text-caption leading-caption ${day.isSelected ? "font-medium text-[#6F8F7A]" : "text-text-secondary"}`}>
                     {day.label}
                   </span>
                 </div>

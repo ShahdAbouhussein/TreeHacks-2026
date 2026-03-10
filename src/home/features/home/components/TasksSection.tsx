@@ -18,13 +18,13 @@ export function TasksSection({ tasks, onSeeAll }: TasksSectionProps) {
   return (
     <section aria-label="Tasks" className="mt-5xl">
       <div className="flex items-center justify-between px-lg">
-        <h2 className="font-serif text-[22px] leading-7 text-text-strong">
+        <h2 className="font-serif text-title leading-title text-text-strong">
           Tasks
         </h2>
         <button
           type="button"
           onClick={onSeeAll}
-          className="flex items-center gap-xs text-[15px] leading-5 text-text-secondary"
+          className="flex items-center gap-xs text-secondary leading-secondary text-text-secondary"
         >
           See all
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">

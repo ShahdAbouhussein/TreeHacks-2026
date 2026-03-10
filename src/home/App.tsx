@@ -63,6 +63,9 @@ function App({ onSeeAllTasks, onNavPress, events = [], userId, userName }: AppPr
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
   const [scrollKey, setScrollKey] = useState(0);
+  const [showSummary, setShowSummary] = useState(false);
+  const [summary, setSummary] = useState("");
+  const [summaryLoading, setSummaryLoading] = useState(false);
   const { tasks: firestoreTasks } = useTasks(userId);
 
   const days = useMemo(() => getWeekDays(selectedDate), [selectedDate]);
@@ -94,6 +97,43 @@ function App({ onSeeAllTasks, onNavPress, events = [], userId, userName }: AppPr
       return next;
     });
   }, []);
+
+  const handleAiPress = useCallback(async () => {
+    if (showSummary) {
+      setShowSummary(false);
+      return;
+    }
+    setShowSummary(true);
+    setSummaryLoading(true);
+    try {
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+      const todayEnd = new Date();
+      todayEnd.setHours(23, 59, 59, 999);
+
+      const todayEvents = events
+        .filter((e) => e.start <= todayEnd && e.end >= todayStart)
+        .map((e) => ({ title: e.title, start: e.start.toISOString(), end: e.end.toISOString() }));
+
+      const todayTasks = firestoreTasks.map((t) => ({
+        title: t.title,
+        dueDate: t.dueDate,
+        category: t.category,
+      }));
+
+      const res = await fetch("/api/daily-summary", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tasks: todayTasks, events: todayEvents, userName }),
+      });
+      const data = await res.json();
+      setSummary(data.summary || "You have a clear day ahead!");
+    } catch {
+      setSummary("Couldn't load your summary right now. Try again later!");
+    } finally {
+      setSummaryLoading(false);
+    }
+  }, [showSummary, events, firestoreTasks, userName]);
 
   const selectedEvents = useMemo(() => {
     const dayStart = new Date(selectedDate);
@@ -163,6 +203,7 @@ function App({ onSeeAllTasks, onNavPress, events = [], userId, userName }: AppPr
         tasks={homeTasks}
         navItems={navItems}
         onAddPress={() => setShowAddModal(true)}
+        onAiPress={handleAiPress}
         onDayPress={handleDayPress}
         onNextWeek={handleNextWeek}
         onPrevWeek={handlePrevWeek}
@@ -170,6 +211,10 @@ function App({ onSeeAllTasks, onNavPress, events = [], userId, userName }: AppPr
         onSeeAllTasks={onSeeAllTasks}
         onNavPress={onNavPress}
         onEventPress={handleEventPress}
+        showSummary={showSummary}
+        summary={summary}
+        summaryLoading={summaryLoading}
+        onCloseSummary={() => setShowSummary(false)}
       />
       {(showAddModal || editingEvent) && userId && (
         <AddItemModal

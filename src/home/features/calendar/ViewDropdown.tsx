@@ -117,7 +117,7 @@ export function ViewDropdown({ value, onChange }: ViewDropdownProps) {
                     }}
                     onMouseEnter={() => setHoveredItem(view)}
                     onMouseLeave={() => setHoveredItem(null)}
-                    className={`relative flex cursor-pointer items-center rounded-lg px-3 py-2 text-[14px] font-medium transition-colors duration-200 ${
+                    className={`relative flex cursor-pointer items-center rounded-[8px] px-3 py-2 text-secondary leading-secondary font-medium transition-colors duration-200 ${
                       isActive
                         ? "text-text-strong"
                         : "text-text-secondary hover:text-text-strong"
@@ -126,7 +126,7 @@ export function ViewDropdown({ value, onChange }: ViewDropdownProps) {
                     {showIndicator && (
                       <motion.div
                         layoutId="viewIndicator"
-                        className="absolute inset-0 rounded-lg bg-subtle-fill"
+                        className="absolute inset-0 rounded-[8px] bg-subtle-fill"
                         transition={{
                           type: "spring",
                           damping: 30,

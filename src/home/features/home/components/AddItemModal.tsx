@@ -14,6 +14,12 @@ const CATEGORY_LABELS: Record<Category, string> = {
   maintain: "Maintain",
   flourish: "Flourish",
 };
+const CATEGORY_TOOLTIPS: Record<Category, string> = {
+  protect: "Urgent, prevent harm",
+  progress: "Move life forward",
+  maintain: "Keep things running",
+  flourish: "Joy & energy",
+};
 
 const smoothSpring = { type: "spring" as const, stiffness: 200, damping: 24, mass: 0.8 };
 
@@ -111,13 +117,13 @@ function InlineDatePicker({
   };
 
   return (
-    <div className="py-2">
+    <div className="rounded-[12px] bg-white p-3 shadow-lg border border-border" style={{ width: 280 }}>
       {/* Month header */}
       <div className="flex items-center justify-between mb-1 px-1">
-        <span className="text-[15px] font-semibold text-text-strong">
+        <span className="text-secondary leading-secondary font-semibold text-text-strong">
           {MONTH_NAMES[viewMonth]} {viewYear}
         </span>
-        <div className="flex gap-2">
+        <div className="flex gap-1">
           <button type="button" onClick={goPrev} className="flex h-7 w-7 items-center justify-center rounded-full text-text-secondary hover:bg-subtle-fill">
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M10 4L6 8L10 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
           </button>
@@ -130,7 +136,7 @@ function InlineDatePicker({
       {/* Day headers */}
       <div className="grid grid-cols-7 mt-1">
         {DAY_LABELS.map((label, i) => (
-          <div key={i} className="py-1.5 text-center text-[11px] font-medium leading-3 tracking-[0.04em] text-text-tertiary">
+          <div key={i} className="py-1 text-center text-caption leading-caption font-medium tracking-[0.04em] text-text-tertiary">
             {label}
           </div>
         ))}
@@ -148,12 +154,12 @@ function InlineDatePicker({
               onClick={() => {
                 if (cell.isCurrentMonth) onChange(toDateStr(viewYear, viewMonth, cell.day));
               }}
-              className={`relative flex h-[36px] items-center justify-center text-[15px] leading-5 ${
+              className={`relative flex h-[34px] items-center justify-center text-caption leading-caption ${
                 cell.isCurrentMonth ? "text-text-strong" : "text-text-tertiary"
               }`}
             >
               {isSelected && (
-                <span className="absolute inset-0 m-auto h-[32px] w-[32px] rounded-full bg-accent/15" />
+                <span className="absolute inset-0 m-auto h-[28px] w-[28px] rounded-full bg-accent/15" />
               )}
               <span className={`relative z-10 ${
                 isSelected ? "font-semibold text-accent" : isToday ? "text-accent" : ""
@@ -183,7 +189,7 @@ function Pill({
     <button
       type="button"
       onClick={onClick}
-      className={`rounded-[8px] px-3 py-[6px] text-[13px] font-medium leading-5 transition-colors ${
+      className={`rounded-[8px] px-3 py-[6px] text-caption leading-caption font-medium transition-colors ${
         isActive
           ? "bg-accent/10 text-accent"
           : "bg-surface text-text-strong"
@@ -244,7 +250,7 @@ function WheelColumn({
       {items.map((item, i) => (
         <div
           key={i}
-          className={`flex items-center justify-center text-[14px] transition-all cursor-pointer ${
+          className={`flex items-center justify-center text-secondary leading-secondary transition-all cursor-pointer ${
             i === selected ? "font-semibold text-text-strong" : "text-text-tertiary"
           }`}
           style={{ height: WHEEL_ITEM_H, scrollSnapAlign: "center" }}
@@ -331,6 +337,8 @@ export function AddItemModal({ userId, onClose, editEvent }: AddItemModalProps) 
   const [title, setTitle] = useState(editEvent?.title ?? "");
   const [details, setDetails] = useState(editEvent?.description ?? "");
   const [category, setCategory] = useState<Category>("protect");
+  const [tooltip, setTooltip] = useState<Category | null>(null);
+  const tooltipTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [itemType, setItemType] = useState<ItemType>(editEvent ? "event" : "task");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -418,7 +426,7 @@ export function AddItemModal({ userId, onClose, editEvent }: AddItemModalProps) 
   return (
     <AnimatePresence>
       <motion.div
-        className="fixed inset-0 z-50 flex items-center justify-center bg-white/60 backdrop-blur-sm"
+        className="fixed inset-0 z-50 flex items-center justify-center overflow-visible bg-white/60 backdrop-blur-sm"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -426,7 +434,7 @@ export function AddItemModal({ userId, onClose, editEvent }: AddItemModalProps) 
         onClick={onClose}
       >
         <motion.div
-          className="w-full max-w-[370px] mx-4 max-h-[90vh] overflow-y-auto rounded-[20px] bg-surface p-5 shadow-subtle"
+          className="w-full max-w-[370px] mx-4 rounded-[20px] bg-surface p-5 shadow-subtle overflow-visible"
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -435,15 +443,15 @@ export function AddItemModal({ userId, onClose, editEvent }: AddItemModalProps) 
         >
           {/* Header */}
           <div className="flex items-center justify-between">
-            <button type="button" onClick={onClose} className="text-[15px] leading-5 text-text-secondary">
+            <button type="button" onClick={onClose} className="text-secondary leading-secondary text-text-secondary">
               Cancel
             </button>
-            <span className="text-[15px] font-semibold text-text-strong">{isEdit ? "Edit" : "New"}</span>
+            <span className="text-secondary leading-secondary font-semibold text-text-strong">{isEdit ? "Edit" : "New"}</span>
             <button
               type="button"
               onClick={handleSave}
               disabled={!canSave || saving}
-              className="text-[15px] leading-5 font-medium text-accent disabled:opacity-40"
+              className="text-secondary leading-secondary font-medium text-accent disabled:opacity-40"
             >
               {saving ? "Saving…" : "Save"}
             </button>
@@ -459,7 +467,7 @@ export function AddItemModal({ userId, onClose, editEvent }: AddItemModalProps) 
                       key={t}
                       type="button"
                       onClick={() => { setItemType(t); setActivePicker(null); }}
-                      className="relative flex-1 rounded-[8px] py-[6px] text-center text-[13px] leading-5 outline-none"
+                      className="relative flex-1 rounded-[8px] py-[6px] text-center text-caption leading-caption outline-none"
                     >
                       {itemType === t && (
                         <motion.div
@@ -481,7 +489,7 @@ export function AddItemModal({ userId, onClose, editEvent }: AddItemModalProps) 
           {/* Title + Details card */}
           <div className="mt-4 rounded-[16px] bg-background px-4 py-3">
             <input
-              className="w-full bg-transparent text-[15px] leading-6 text-text-strong placeholder:text-text-tertiary focus:outline-none"
+              className="w-full bg-transparent text-secondary leading-body text-text-strong placeholder:text-text-tertiary focus:outline-none"
               placeholder="Title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
@@ -489,7 +497,7 @@ export function AddItemModal({ userId, onClose, editEvent }: AddItemModalProps) 
             />
             <div className="my-2 h-px bg-divider" />
             <input
-              className="w-full bg-transparent text-[15px] leading-6 text-text-strong placeholder:text-text-tertiary focus:outline-none"
+              className="w-full bg-transparent text-secondary leading-body text-text-strong placeholder:text-text-tertiary focus:outline-none"
               placeholder="Add details"
               value={details}
               onChange={(e) => setDetails(e.target.value)}
@@ -497,7 +505,7 @@ export function AddItemModal({ userId, onClose, editEvent }: AddItemModalProps) 
           </div>
 
           {error && (
-            <p className="mt-2 px-1 text-[13px] leading-4 text-red-500">{error}</p>
+            <p className="mt-2 px-1 text-caption leading-caption text-red-500">{error}</p>
           )}
 
           {/* Date / time section */}
@@ -505,45 +513,69 @@ export function AddItemModal({ userId, onClose, editEvent }: AddItemModalProps) 
             {itemType === "task" ? (
               <motion.div
                 key="task-fields"
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -6 }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
                 transition={{ duration: 0.2, ease: "easeInOut" }}
                 className="mt-4 rounded-[16px] bg-background px-4"
               >
                 <div className="flex items-center justify-between py-3">
-                  <span className="text-[15px] text-text-strong">Due date</span>
-                  <Pill
-                    label={formatShortDate(dueDate)}
-                    isActive={activePicker === "dueDate"}
-                    onClick={() => togglePicker("dueDate")}
-                  />
+                  <span className="text-secondary leading-secondary text-text-strong">Due date</span>
+                  <div className="relative">
+                    <Pill
+                      label={formatShortDate(dueDate)}
+                      isActive={activePicker === "dueDate"}
+                      onClick={() => togglePicker("dueDate")}
+                    />
+                    <AnimatePresence>
+                      {activePicker === "dueDate" && (
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.95, y: -4 }}
+                          animate={{ opacity: 1, scale: 1, y: 0 }}
+                          exit={{ opacity: 0, scale: 0.95, y: -4 }}
+                          transition={{ duration: 0.18, ease: "easeOut" }}
+                          className="absolute right-0 top-full z-[60] mt-1"
+                        >
+                          <InlineDatePicker value={dueDate} onChange={(d) => { setDueDate(d); setActivePicker(null); }} />
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
                 </div>
-                {activePicker === "dueDate" && (
-                  <>
-                    <div className="h-px bg-divider" />
-                    <InlineDatePicker value={dueDate} onChange={(d) => { setDueDate(d); setActivePicker(null); }} />
-                  </>
-                )}
               </motion.div>
             ) : (
               <motion.div
                 key="event-fields"
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -6 }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
                 transition={{ duration: 0.2, ease: "easeInOut" }}
                 className="mt-4 rounded-[16px] bg-background px-4"
               >
                 {/* Starts row */}
                 <div className="flex items-center justify-between py-3">
-                  <span className="text-[15px] text-text-strong">Starts</span>
+                  <span className="text-secondary leading-secondary text-text-strong">Starts</span>
                   <div className="flex gap-2">
-                    <Pill
-                      label={formatShortDate(startDate)}
-                      isActive={activePicker === "startDate"}
-                      onClick={() => togglePicker("startDate")}
-                    />
+                    <div className="relative">
+                      <Pill
+                        label={formatShortDate(startDate)}
+                        isActive={activePicker === "startDate"}
+                        onClick={() => togglePicker("startDate")}
+                      />
+                      <AnimatePresence>
+                        {activePicker === "startDate" && (
+                          <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: -4 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: -4 }}
+                            transition={{ duration: 0.18, ease: "easeOut" }}
+                            className="absolute right-0 top-full z-[60] mt-1"
+                          >
+                            <InlineDatePicker value={startDate} onChange={(d) => { setStartDate(d); setActivePicker(null); }} />
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
                     <div className="relative">
                       <Pill
                         label={formatTime12(startTime)}
@@ -551,7 +583,7 @@ export function AddItemModal({ userId, onClose, editEvent }: AddItemModalProps) 
                         onClick={() => togglePicker("startTime")}
                       />
                       {activePicker === "startTime" && (
-                        <div className="absolute right-0 top-full z-20 mt-1">
+                        <div className="absolute right-0 top-full z-[60] mt-1">
                           <WheelTimePicker value={startTime} onChange={setStartTime} />
                         </div>
                       )}
@@ -559,25 +591,32 @@ export function AddItemModal({ userId, onClose, editEvent }: AddItemModalProps) 
                   </div>
                 </div>
 
-                {/* Start date picker */}
-                {activePicker === "startDate" && (
-                  <>
-                    <div className="h-px bg-divider" />
-                    <InlineDatePicker value={startDate} onChange={(d) => { setStartDate(d); setActivePicker(null); }} />
-                  </>
-                )}
-
                 <div className="h-px bg-divider" />
 
                 {/* Ends row */}
                 <div className="flex items-center justify-between py-3">
-                  <span className="text-[15px] text-text-strong">Ends</span>
+                  <span className="text-secondary leading-secondary text-text-strong">Ends</span>
                   <div className="flex gap-2">
-                    <Pill
-                      label={formatShortDate(endDate)}
-                      isActive={activePicker === "endDate"}
-                      onClick={() => togglePicker("endDate")}
-                    />
+                    <div className="relative">
+                      <Pill
+                        label={formatShortDate(endDate)}
+                        isActive={activePicker === "endDate"}
+                        onClick={() => togglePicker("endDate")}
+                      />
+                      <AnimatePresence>
+                        {activePicker === "endDate" && (
+                          <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: -4 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: -4 }}
+                            transition={{ duration: 0.18, ease: "easeOut" }}
+                            className="absolute right-0 top-full z-[60] mt-1"
+                          >
+                            <InlineDatePicker value={endDate} onChange={(d) => { setEndDate(d); setActivePicker(null); }} />
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
                     <div className="relative">
                       <Pill
                         label={formatTime12(endTime)}
@@ -585,21 +624,13 @@ export function AddItemModal({ userId, onClose, editEvent }: AddItemModalProps) 
                         onClick={() => togglePicker("endTime")}
                       />
                       {activePicker === "endTime" && (
-                        <div className="absolute right-0 top-full z-20 mt-1">
+                        <div className="absolute right-0 top-full z-[60] mt-1">
                           <WheelTimePicker value={endTime} onChange={setEndTime} />
                         </div>
                       )}
                     </div>
                   </div>
                 </div>
-
-                {/* End date picker */}
-                {activePicker === "endDate" && (
-                  <>
-                    <div className="h-px bg-divider" />
-                    <InlineDatePicker value={endDate} onChange={(d) => { setEndDate(d); setActivePicker(null); }} />
-                  </>
-                )}
               </motion.div>
             )}
           </AnimatePresence>
@@ -609,7 +640,7 @@ export function AddItemModal({ userId, onClose, editEvent }: AddItemModalProps) 
             <button
               type="button"
               onClick={handleDelete}
-              className="mt-4 w-full rounded-[16px] bg-background py-3 text-[15px] font-medium text-red-500"
+              className="mt-4 w-full rounded-[16px] bg-background py-3 text-secondary leading-secondary font-medium text-red-500"
             >
               Delete Event
             </button>
@@ -618,29 +649,48 @@ export function AddItemModal({ userId, onClose, editEvent }: AddItemModalProps) 
           {/* Priority selector (hidden in edit mode since events don't have categories) */}
           {!isEdit && (
             <div className="mt-4 rounded-[16px] bg-background px-4 py-3">
-              <p className="text-[13px] leading-4 text-text-tertiary mb-3">
+              <p className="text-caption leading-caption text-text-tertiary mb-3">
                 How should we prioritize this item?
               </p>
               <LayoutGroup id="priority-pills">
-                <div className="flex gap-2">
+                <div className="relative flex flex-wrap gap-2">
                   {CATEGORIES.map((cat) => (
-                    <button
-                      key={cat}
-                      type="button"
-                      onClick={() => setCategory(cat)}
-                      className="relative shrink-0 rounded-full px-[16px] py-[7px] text-[14px] leading-5 outline-none transition-colors duration-200"
-                    >
-                      {category === cat && (
-                        <motion.div
-                          layoutId="priority-pill"
-                          className="absolute inset-0 rounded-full border border-border bg-surface"
-                          transition={smoothSpring}
-                        />
-                      )}
-                      <span className={`relative z-10 ${category === cat ? "text-text-strong" : "text-text-secondary"}`}>
-                        {CATEGORY_LABELS[cat]}
-                      </span>
-                    </button>
+                    <div key={cat} className="relative">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCategory(cat);
+                          if (tooltipTimer.current) clearTimeout(tooltipTimer.current);
+                          setTooltip(cat);
+                          tooltipTimer.current = setTimeout(() => setTooltip(null), 1800);
+                        }}
+                        className="relative rounded-full px-[16px] py-[7px] text-secondary leading-secondary outline-none transition-colors duration-200"
+                      >
+                        {category === cat && (
+                          <motion.div
+                            layoutId="priority-pill"
+                            className="absolute inset-0 rounded-full border border-border bg-surface"
+                            transition={smoothSpring}
+                          />
+                        )}
+                        <span className={`relative z-10 ${category === cat ? "text-text-strong" : "text-text-secondary"}`}>
+                          {CATEGORY_LABELS[cat]}
+                        </span>
+                      </button>
+                      <AnimatePresence>
+                        {tooltip === cat && (
+                          <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.2 }}
+                            className="absolute left-1/2 top-full z-30 mt-2 -translate-x-1/2 w-[120px] text-center rounded-[8px] bg-white px-2 py-[5px] text-caption leading-caption text-text-secondary shadow-lg border border-border"
+                          >
+                            {CATEGORY_TOOLTIPS[cat]}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
                   ))}
                 </div>
               </LayoutGroup>
