@@ -117,7 +117,7 @@ export function ViewDropdown({ value, onChange }: ViewDropdownProps) {
                     }}
                     onMouseEnter={() => setHoveredItem(view)}
                     onMouseLeave={() => setHoveredItem(null)}
-                    className={`relative flex cursor-pointer items-center rounded-[8px] px-3 py-2 text-secondary leading-secondary font-medium transition-colors duration-200 ${
+                    className={`relative flex cursor-pointer items-center rounded-[8px] px-3 py-2 text-body leading-body font-medium transition-colors duration-200 ${
                       isActive
                         ? "text-text-strong"
                         : "text-text-secondary hover:text-text-strong"

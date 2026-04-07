@@ -11,7 +11,7 @@ export function EventItem({ title, timeRange, onClick }: EventItemProps) {
       style={{ backgroundColor: "#F7F7F7", borderLeft: "3px solid #6F8F7A" }}
       onClick={onClick}
     >
-      <span className="text-secondary leading-secondary font-medium text-text-strong">{title}</span>
+      <span className="text-body leading-body font-medium text-text-strong">{title}</span>
       <span className="text-caption leading-caption text-gray-400 whitespace-nowrap ml-[8px]">
         {timeRange}
       </span>

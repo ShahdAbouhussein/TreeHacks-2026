@@ -1,28 +1,33 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
-@import "@fontsource-variable/geist";
 
 @custom-variant dark (&:is(.dark *));
 
 @theme {
   /* ── Fonts ── */
-  --font-serif: 'Libre Baskerville', serif;
-  --font-sans: 'Instrument Sans', sans-serif;
+  --font-serif: 'Lora', serif;
+  --font-sans: 'Inter', 'InterVariable', sans-serif;
 
   /* ── Typography Scale ── */
-  --font-size-caption:   12px;
-  --font-size-secondary: 15px;
-  --font-size-body:      17px;
-  --font-size-title:     22px;
-  --font-size-display:   28px;
+  --font-size-label:   11px;
+  --font-size-caption: 12px;
+  --font-size-small:   13px;
+  --font-size-body:    14px;
+  --font-size-title:   18px;
+  --font-size-section: 22px;
+  --font-size-heading: 24px;
+  --font-size-display: 28px;
 
   /* ── Paired Line Heights ── */
-  --leading-caption:   16px;
-  --leading-secondary: 20px;
-  --leading-body:      24px;
-  --leading-title:     28px;
-  --leading-display:   34px;
+  --leading-label:   14px;
+  --leading-caption: 16px;
+  --leading-small:   18px;
+  --leading-body:    20px;
+  --leading-title:   24px;
+  --leading-section: 28px;
+  --leading-heading: 32px;
+  --leading-display: 34px;
 
   /* ── Background ── */
   --color-background:           #FAFAF8;
@@ -111,102 +116,74 @@
 }
 
 @layer utilities {
-  .text-caption   { font-size: 12px; line-height: 16px; }
-  .text-secondary { font-size: 15px; line-height: 20px; }
-  .text-body      { font-size: 17px; line-height: 24px; }
-  .text-title     { font-size: 22px; line-height: 28px; }
-  .text-display   { font-size: 28px; line-height: 34px; }
+  .text-label   { font-size: 11px; line-height: 14px; }
+  .text-caption { font-size: 12px; line-height: 16px; }
+  .text-small   { font-size: 13px; line-height: 18px; }
+  .text-body    { font-size: 14px; line-height: 20px; }
+  .text-title   { font-size: 18px; line-height: 24px; }
+  .text-section { font-size: 22px; line-height: 28px; }
+  .text-heading { font-size: 24px; line-height: 32px; }
+  .text-display { font-size: 28px; line-height: 34px; }
 
-  .leading-caption   { line-height: 16px; }
-  .leading-secondary { line-height: 20px; }
-  .leading-body      { line-height: 24px; }
-  .leading-title     { line-height: 28px; }
-  .leading-display   { line-height: 34px; }
+  .leading-label   { line-height: 14px; }
+  .leading-caption { line-height: 16px; }
+  .leading-small   { line-height: 18px; }
+  .leading-body    { line-height: 20px; }
+  .leading-title   { line-height: 24px; }
+  .leading-section { line-height: 28px; }
+  .leading-heading { line-height: 32px; }
+  .leading-display { line-height: 34px; }
 }
 
 html,
 body {
   margin: 0;
   font-family: var(--font-sans);
-  font-size: 17px;
-  line-height: 24px;
+  font-size: 14px;
+  line-height: 20px;
   color: var(--color-text-primary);
-  background-color: #FAFAFB;
+  background-color: #FAFAF8;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: 'liga' 1, 'calt' 1; /* Inter variable font features */
 }
 
+@supports (font-variation-settings: normal) {
+  html, body {
+    font-family: 'InterVariable', sans-serif;
+  }
+}
+
+/* ── shadcn CSS variables (themed to match Kali design) ── */
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.809 0.105 251.813);
-  --chart-2: oklch(0.623 0.214 259.815);
-  --chart-3: oklch(0.546 0.245 262.881);
-  --chart-4: oklch(0.488 0.243 264.376);
-  --chart-5: oklch(0.424 0.199 265.638);
   --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
-}
-
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.809 0.105 251.813);
-  --chart-2: oklch(0.623 0.214 259.815);
-  --chart-3: oklch(0.546 0.245 262.881);
-  --chart-4: oklch(0.488 0.243 264.376);
-  --chart-5: oklch(0.424 0.199 265.638);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --background: #FAFAF8;
+  --foreground: #1C1C1E;
+  --card: #FFFFFF;
+  --card-foreground: #1C1C1E;
+  --popover: #FFFFFF;
+  --popover-foreground: #1C1C1E;
+  --primary: #6F8F7A;
+  --primary-foreground: #FFFFFF;
+  --secondary: #F4F3EF;
+  --secondary-foreground: #1C1C1E;
+  --muted: #F4F3EF;
+  --muted-foreground: #6B7280;
+  --destructive: #D64545;
+  --border: rgba(0, 0, 0, 0.08);
+  --input: rgba(0, 0, 0, 0.08);
+  --ring: #6F8F7A;
+  --sidebar: #FFFFFF;
+  --sidebar-foreground: #1C1C1E;
+  --sidebar-primary: #6F8F7A;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #F4F3EF;
+  --sidebar-accent-foreground: #1C1C1E;
+  --sidebar-border: rgba(0, 0, 0, 0.08);
+  --sidebar-ring: #6F8F7A;
 }
 
 @theme inline {
-  --font-sans: 'Geist Variable', sans-serif;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -215,21 +192,11 @@ body {
   --color-sidebar-primary: var(--sidebar-primary);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar: var(--sidebar);
-  --color-chart-5: var(--chart-5);
-  --color-chart-4: var(--chart-4);
-  --color-chart-3: var(--chart-3);
-  --color-chart-2: var(--chart-2);
-  --color-chart-1: var(--chart-1);
   --color-ring: var(--ring);
   --color-input: var(--input);
-  --color-border: var(--border);
   --color-destructive: var(--destructive);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
   --color-muted: var(--muted);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-secondary: var(--secondary);
   --color-primary-foreground: var(--primary-foreground);
   --color-primary: var(--primary);
   --color-popover-foreground: var(--popover-foreground);
@@ -237,24 +204,10 @@ body {
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
   --color-foreground: var(--foreground);
-  --color-background: var(--background);
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
-  }
-  body {
-    @apply bg-background text-foreground;
-  }
-  html {
-    @apply font-sans;
   }
 }

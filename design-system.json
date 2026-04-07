@@ -1,0 +1,193 @@
+{
+  "name": "Kali Design System",
+  "version": "1.0",
+  "description": "Complete design token reference for the Kali app. Mobile-first with desktop overrides at lg (1024px).",
+
+  "typefaces": {
+    "serif": {
+      "family": "Lora",
+      "fallback": "serif",
+      "usage": "Headings, display text, greeting"
+    },
+    "sans": {
+      "family": "Inter Variable",
+      "source": "https://rsms.me/inter/",
+      "fallback": "sans-serif",
+      "features": "liga, calt (ligatures + contextual alternates)",
+      "usage": "Body text, UI labels, buttons, navigation"
+    }
+  },
+
+  "typography": {
+    "mobile": {
+      "display": { "fontSize": "28px", "lineHeight": "34px", "fontFamily": "serif", "weight": "400", "tracking": "-0.3px", "usage": "Page titles (Tasks, Calendar)" },
+      "title": { "fontSize": "22px", "lineHeight": "28px", "fontFamily": "serif", "weight": "400", "tracking": "-0.3px", "usage": "Section headings" },
+      "body": { "fontSize": "17px", "lineHeight": "24px", "fontFamily": "sans", "weight": "400", "usage": "Default body text, base font size" },
+      "secondary": { "fontSize": "15px", "lineHeight": "20px", "fontFamily": "sans", "weight": "400", "usage": "Tab labels, subtitles, back button, nav items" },
+      "caption": { "fontSize": "12px", "lineHeight": "16px", "fontFamily": "sans", "weight": "400", "usage": "Tags, small labels, due dates" }
+    },
+    "desktop": {
+      "pageTitle": { "fontSize": "24px", "lineHeight": "32px", "fontFamily": "serif", "weight": "600", "tracking": "-0.3px", "usage": "Page headings (Tasks, etc.)" },
+      "sectionTitle": { "fontSize": "18px", "lineHeight": "24px", "fontFamily": "serif", "weight": "600", "tracking": "-0.2px", "usage": "Sidebar logo text" },
+      "navItem": { "fontSize": "13px", "lineHeight": "16px", "fontFamily": "sans", "weight": "500", "usage": "Sidebar navigation labels, buttons" },
+      "filterPill": { "fontSize": "12px", "lineHeight": "14px", "fontFamily": "sans", "weight": "500", "usage": "Category filter pills on tasks page" },
+      "calendarTimeLabel": { "fontSize": "10px", "lineHeight": "14px", "fontFamily": "sans", "weight": "400", "usage": "Time labels in weekly calendar grid" },
+      "calendarDayLabel": { "fontSize": "13px", "lineHeight": "16px", "fontFamily": "sans", "weight": "400", "usage": "Day-of-week headers in calendar" },
+      "calendarEventTitle": { "fontSize": "12px", "lineHeight": "14px", "fontFamily": "sans", "weight": "500", "usage": "Event title inside calendar blocks" },
+      "calendarEventTime": { "fontSize": "10px", "lineHeight": "14px", "fontFamily": "sans", "weight": "400", "usage": "Time range inside calendar blocks" },
+      "userEmail": { "fontSize": "12px", "lineHeight": "14px", "fontFamily": "sans", "weight": "400", "usage": "User email in sidebar footer" },
+      "userName": { "fontSize": "13px", "lineHeight": "16px", "fontFamily": "sans", "weight": "500", "usage": "User name in sidebar footer" }
+    }
+  },
+
+  "colors": {
+    "background": {
+      "primary": "#FAFAF8",
+      "secondary": "#F4F3EF",
+      "elevated": "#FFFFFF",
+      "surface": "#FFFFFF",
+      "surfaceAlt": "#F4F3EF",
+      "subtleFill": "rgba(28, 28, 30, 0.04)"
+    },
+    "text": {
+      "strong": "#1C1C1E",
+      "primary": "#111111",
+      "secondary": "#6B7280",
+      "tertiary": "#9CA3AF"
+    },
+    "accent": {
+      "default": "#6F8F7A",
+      "dark": "#5A7A65",
+      "deeper": "#4D6B56"
+    },
+    "semantic": {
+      "success": "#669F68",
+      "warning": "#F4B400",
+      "error": "#D64545",
+      "info": "#5B73E8"
+    },
+    "states": {
+      "listenGlow": "#6F8F7A",
+      "processing": "#D9D7D1",
+      "speaking": "#6F8F7A"
+    },
+    "ui": {
+      "eventBg": "#F1F1F0",
+      "border": "rgba(0, 0, 0, 0.08)",
+      "tagBg": "rgba(28, 28, 30, 0.06)",
+      "divider": "rgba(0, 0, 0, 0.08)",
+      "iconPrimary": "#1F1A15"
+    },
+    "grayScale": {
+      "25": "#fcfcfd",
+      "50": "#f9fafb",
+      "100": "#f2f4f7",
+      "200": "#eaecf0",
+      "300": "#d0d5dd",
+      "400": "#98a2b3",
+      "500": "#667085",
+      "600": "#475467",
+      "700": "#344054",
+      "800": "#182230",
+      "900": "#101828",
+      "950": "#0c111d"
+    }
+  },
+
+  "spacing": {
+    "note": "4pt grid system (Apple HIG)",
+    "tokens": {
+      "xs": "4px",
+      "sm": "8px",
+      "md": "12px",
+      "lg": "16px",
+      "xl": "20px",
+      "2xl": "24px",
+      "3xl": "32px",
+      "4xl": "40px",
+      "5xl": "48px",
+      "6xl": "64px"
+    }
+  },
+
+  "cornerRadius": {
+    "sm": "8px",
+    "md": "12px",
+    "lg": "20px",
+    "note": "Buttons use rounded-md (12px). Full-round pills use rounded-full."
+  },
+
+  "shadows": {
+    "subtle": "0 2px 8px rgba(0, 0, 0, 0.05)"
+  },
+
+  "breakpoints": {
+    "mobile": "0 – 1023px",
+    "desktop": "1024px+ (lg: prefix in Tailwind)"
+  },
+
+  "layout": {
+    "mobile": {
+      "maxWidth": "402px",
+      "centering": "mx-auto",
+      "navigation": "Bottom tab bar (fixed)",
+      "contentPadding": "16px (px-lg)"
+    },
+    "desktop": {
+      "sidebar": {
+        "width": "260px",
+        "position": "sticky top-0, full height",
+        "background": "surface (#FFFFFF)",
+        "borderRight": "1px solid divider"
+      },
+      "contentArea": {
+        "maxWidth": "none (full width)",
+        "padding": "32px horizontal (px-8)"
+      },
+      "navigation": "Sidebar only, no bottom bar"
+    }
+  },
+
+  "components": {
+    "library": "shadcn/ui (base-nova style)",
+    "framework": "React 19 + Vite 7",
+    "styling": "Tailwind CSS v4",
+    "animations": "Framer Motion",
+    "database": "Firebase (Auth + Firestore)",
+    "installed": ["button", "separator", "scroll-area", "tooltip"]
+  },
+
+  "animations": {
+    "fadeIn": {
+      "duration": "0.2s",
+      "easing": "ease-out",
+      "transform": "translateY(4px) → translateY(0)"
+    },
+    "tabSwitch": {
+      "type": "spring",
+      "stiffness": 350,
+      "damping": 30,
+      "mass": 1
+    },
+    "pageTransition": {
+      "enter": { "opacity": "0 → 1", "y": "4px → 0", "duration": "0.15s" },
+      "exit": { "opacity": "1 → 0", "y": "0 → -4px", "duration": "0.15s" }
+    }
+  },
+
+  "desktopCalendar": {
+    "slotHeight": "64px",
+    "headerHeight": "48px",
+    "gridColumns": "60px time label + 7 equal day columns",
+    "currentTimeIndicator": {
+      "color": "accent (#6F8F7A)",
+      "lineWidth": "2px",
+      "dotSize": "10px"
+    },
+    "eventBlock": {
+      "background": "rgba(111, 143, 122, 0.12)",
+      "borderLeft": "3px solid #6F8F7A",
+      "borderRadius": "3px"
+    }
+  }
+}

@@ -17,14 +17,14 @@ interface TasksSectionProps {
 export function TasksSection({ tasks, onSeeAll }: TasksSectionProps) {
   return (
     <section aria-label="Tasks" className="mt-5xl">
-      <div className="flex items-center justify-between px-lg">
-        <h2 className="font-serif text-title leading-title text-text-strong">
+      <div className="flex items-center justify-between px-lg lg:px-0">
+        <h2 className="font-serif text-section leading-section text-text-strong lg:font-normal">
           Tasks
         </h2>
         <button
           type="button"
           onClick={onSeeAll}
-          className="flex items-center gap-xs text-secondary leading-secondary text-text-secondary"
+          className="flex items-center gap-xs text-body leading-body text-text-secondary"
         >
           See all
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -38,7 +38,7 @@ export function TasksSection({ tasks, onSeeAll }: TasksSectionProps) {
           </svg>
         </button>
       </div>
-      <div className="mt-lg flex gap-md overflow-x-auto px-lg pb-sm">
+      <div className="mt-lg flex gap-md overflow-x-auto px-lg lg:px-0 pb-sm">
         {tasks.map((task) => (
           <TaskCard
             key={task.id}

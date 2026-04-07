@@ -62,7 +62,7 @@ export function BottomNav({ items, onItemPress }: BottomNavProps) {
     <>
       {/* Gradient blur behind navbar */}
       <div
-        className="pointer-events-none fixed bottom-0 left-0 right-0 z-10 h-[100px]"
+        className="pointer-events-none fixed bottom-0 left-0 right-0 z-10 h-[100px] lg:hidden"
         style={{ background: "linear-gradient(to bottom, rgba(247,247,248,0), rgba(247,247,248,0.97))" }}
       />
     <nav

@@ -64,24 +64,7 @@ export function TaskCard({ title, dueDate, category, onDismiss }: TaskCardProps)
   const categoryColor = category ? CATEGORY_COLORS[category] || "#6F8F7A" : "#6F8F7A";
 
   return (
-    <article className="relative flex w-[200px] h-[160px] shrink-0 flex-col rounded-[18px] bg-surface px-[18px] pt-[12px] pb-[12px]" style={{ border: "1px solid rgba(150, 150, 150, 0.2)" }}>
-      {/* Dismiss button — top right */}
-      <button
-        type="button"
-        onClick={onDismiss}
-        className="absolute right-[14px] top-[14px] flex h-8 w-8 items-center justify-center rounded-full bg-subtle-fill"
-      >
-        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-          <path
-            d="M9 3L3 9M3 3L9 9"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
-      </button>
-
+    <article className="relative flex w-[200px] h-[140px] shrink-0 flex-col rounded-[18px] bg-surface px-[18px] pt-[14px] pb-[14px]" style={{ border: "1px solid rgba(150, 150, 150, 0.2)" }}>
       {/* Top section */}
       <div>
         {dueLabel && (
@@ -89,18 +72,10 @@ export function TaskCard({ title, dueDate, category, onDismiss }: TaskCardProps)
             {dueLabel}
           </span>
         )}
-        <h3 className="mt-[4px] pr-8 text-body leading-body font-medium text-text-strong">
+        <h3 className="mt-[4px] text-body leading-body font-medium text-text-strong line-clamp-3">
           {title}
         </h3>
       </div>
-
-      {/* Bottom — category pill with icon */}
-      <div className="flex-1" />
-      {categoryIcon && (
-        <span className="inline-flex h-[28px] w-[28px] items-center justify-center rounded-full bg-accent">
-          {categoryIcon}
-        </span>
-      )}
     </article>
   );
 }

@@ -91,7 +91,7 @@ function CommitmentItem({ commitment, onClick }: { commitment: Commitment; onCli
       style={{ backgroundColor: "#F7F7F7", borderLeft: "3px solid #6F8F7A" }}
       onClick={onClick}
     >
-      <span className="text-secondary leading-secondary font-medium text-text-strong">
+      <span className="text-body leading-body font-medium text-text-strong">
         {commitment.title}
       </span>
       <div className="ml-[8px] text-right whitespace-nowrap">
@@ -153,7 +153,7 @@ function MonthGrid({
               key={i}
               type="button"
               onClick={() => cell.isCurrentMonth && onSelectDay(cell.day)}
-              className={`relative flex h-[44px] items-center justify-center text-secondary leading-secondary ${
+              className={`relative flex h-[44px] items-center justify-center text-body leading-body ${
                 cell.isCurrentMonth
                   ? "text-text-strong"
                   : "text-text-tertiary"
@@ -204,7 +204,7 @@ function WeekStrip({
             key={dayNum}
             type="button"
             onClick={() => onSelectDay(dayNum)}
-            className="relative flex h-[44px] items-center justify-center text-secondary leading-secondary text-text-strong"
+            className="relative flex h-[44px] items-center justify-center text-body leading-body text-text-strong"
           >
             {isSelected && (
               <span className="absolute inset-0 m-auto h-[36px] w-[36px] rounded-full bg-accent/15" />
@@ -259,7 +259,7 @@ function TimeSlots({ events = [], onEventPress }: { events?: CalendarEvent[]; on
             }}
             onClick={() => onEventPress?.(e.id)}
           >
-            <span className="text-secondary leading-secondary font-medium text-text-strong truncate">
+            <span className="text-body leading-body font-medium text-text-strong truncate">
               {e.title}
             </span>
             <span className="text-caption leading-caption text-gray-400 whitespace-nowrap ml-[8px]">
@@ -514,13 +514,13 @@ export default function CalendarPage({ onBack, events = [], userId, onNavPress }
         : `day-${currentYear}-${currentMonth}-${selectedDay}`;
 
   return (
-    <div className="relative mx-auto max-w-[402px] bg-background">
+    <div className="relative mx-auto max-w-[402px] lg:max-w-none bg-background">
       {/* Back button */}
-      <div className="flex items-center justify-between px-lg pt-[52px]">
+      <div className="flex items-center justify-between px-lg pt-[52px] lg:pt-8">
         <button
           type="button"
           onClick={onBack}
-          className="flex items-center gap-[6px] text-secondary leading-secondary text-text-strong"
+          className="flex items-center gap-[6px] text-body leading-body text-text-strong lg:hidden"
         >
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
             <path
@@ -538,7 +538,7 @@ export default function CalendarPage({ onBack, events = [], userId, onNavPress }
 
       {/* Title + nav arrows */}
       <div className="mt-xl px-lg">
-        <h1 className="font-serif text-display leading-display tracking-[-0.3px] text-text-strong">
+        <h1 className="font-serif text-display leading-display lg:text-heading lg:leading-heading tracking-[-0.3px] text-text-strong">
           {monthName} {currentYear}
         </h1>
       </div>
@@ -594,7 +594,7 @@ export default function CalendarPage({ onBack, events = [], userId, onNavPress }
         ref={sheetRef}
         animate={{ height: sheetHeight }}
         transition={{ type: "spring", damping: 28, stiffness: 200 }}
-        className="fixed bottom-0 left-0 right-0 z-10 overflow-hidden rounded-t-[28px] bg-surface shadow-[0_-4px_24px_rgba(0,0,0,0.03)]"
+        className="fixed bottom-0 left-0 right-0 z-10 overflow-hidden rounded-t-[28px] bg-surface shadow-[0_-4px_24px_rgba(0,0,0,0.03)] lg:left-[260px]"
       >
         {/* Drag handle */}
         <motion.div
@@ -630,10 +630,10 @@ export default function CalendarPage({ onBack, events = [], userId, onNavPress }
         </motion.div>
       </motion.div>
 
-      {/* Bottom navigation bar */}
+      {/* Bottom navigation bar - mobile only */}
       <nav
         aria-label="Main navigation"
-        className="fixed bottom-6 left-1/2 z-20 flex -translate-x-1/2 items-center gap-xs rounded-full bg-surface-alt px-sm py-sm shadow-subtle"
+        className="fixed bottom-6 left-1/2 z-20 flex -translate-x-1/2 items-center gap-xs rounded-full bg-surface-alt px-sm py-sm shadow-subtle lg:hidden"
       >
         {NAV_ITEMS.map((item) => {
           const isActive = item.id === "calendar";
@@ -660,6 +660,7 @@ export default function CalendarPage({ onBack, events = [], userId, onNavPress }
         <AddItemModal
           userId={userId}
           editEvent={editingEvent}
+          allEvents={events}
           onClose={() => setEditingEvent(null)}
         />
       )}

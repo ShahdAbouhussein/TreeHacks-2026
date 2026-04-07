@@ -46,7 +46,7 @@ export function EventList({ timeSlots, events, scrollKey, onEventPress }: EventL
                 height: slotHeight,
               }}
             >
-              <span className="text-secondary leading-secondary text-text-secondary">
+              <span className="text-body leading-body text-text-secondary">
                 {slot.label}
               </span>
             </div>

@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { HomePage } from "./features/home/HomePage";
 import { AddItemModal } from "./features/home/components/AddItemModal";
 import type { CalendarEvent } from "../lib/useEvents";
@@ -55,18 +55,28 @@ interface AppProps {
   events?: CalendarEvent[];
   userId?: string;
   userName?: string;
+  desktopAddTrigger?: number;
 }
 
-function App({ onSeeAllTasks, onNavPress, events = [], userId, userName }: AppProps) {
+function App({ onSeeAllTasks, onNavPress, events = [], userId, userName, desktopAddTrigger }: AppProps) {
   const [selectedDate, setSelectedDate] = useState(() => new Date());
   const [weekDirection, setWeekDirection] = useState(0);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
+  const [eventAnchor, setEventAnchor] = useState<{ top: number; left: number } | null>(null);
+  const [dragCreateInfo, setDragCreateInfo] = useState<{ date: string; startTime: string; endTime: string } | null>(null);
   const [scrollKey, setScrollKey] = useState(0);
   const [showSummary, setShowSummary] = useState(false);
   const [summary, setSummary] = useState("");
   const [summaryLoading, setSummaryLoading] = useState(false);
   const { tasks: firestoreTasks } = useTasks(userId);
+
+  // Open add modal when desktop sidebar triggers it
+  useEffect(() => {
+    if (desktopAddTrigger && desktopAddTrigger > 0) {
+      setShowAddModal(true);
+    }
+  }, [desktopAddTrigger]);
 
   const days = useMemo(() => getWeekDays(selectedDate), [selectedDate]);
 
@@ -84,10 +94,26 @@ function App({ onSeeAllTasks, onNavPress, events = [], userId, userName }: AppPr
     });
   }, []);
 
-  const handleEventPress = useCallback((eventId: string) => {
+  const handleEventPress = useCallback((eventId: string, clickEvent?: React.MouseEvent) => {
     const found = events.find((e) => e.id === eventId);
-    if (found) setEditingEvent(found);
+    if (found) {
+      setEditingEvent(found);
+      if (clickEvent) {
+        const rect = (clickEvent.currentTarget as HTMLElement).getBoundingClientRect();
+        setEventAnchor({ top: rect.top, left: rect.left });
+      } else {
+        setEventAnchor(null);
+      }
+    }
   }, [events]);
+
+  const handleDragCreate = useCallback((date: string, startTime: string, endTime: string, anchorPosition: { top: number; left: number }) => {
+    console.log("[drag] handleDragCreate called:", date, startTime, endTime);
+    setDragCreateInfo({ date, startTime, endTime });
+    setEventAnchor(anchorPosition);
+    setEditingEvent(null);
+    setShowAddModal(true);
+  }, []);
 
   const handlePrevWeek = useCallback(() => {
     setWeekDirection(-1);
@@ -171,6 +197,37 @@ function App({ onSeeAllTasks, onNavPress, events = [], userId, userName }: AppPr
       });
   }, [events, selectedDate]);
 
+  // All events for the visible week, keyed by day-of-month
+  const weekEventsByDay = useMemo(() => {
+    const map: Record<string, typeof selectedEvents> = {};
+    for (const day of days) {
+      const dayStart = new Date(day.year, day.month, day.date);
+      dayStart.setHours(0, 0, 0, 0);
+      const dayEnd = new Date(day.year, day.month, day.date);
+      dayEnd.setHours(23, 59, 59, 999);
+
+      map[`${day.year}-${day.month}-${day.date}`] = events
+        .filter((e) => e.start <= dayEnd && e.end >= dayStart)
+        .map((e) => {
+          if (e.allDay) {
+            return { id: e.id, title: e.title, timeRange: "All day", startHour: 0, durationHours: 1 };
+          }
+          const visibleStart = e.start < dayStart ? dayStart : e.start;
+          const visibleEnd = e.end > dayEnd ? dayEnd : e.end;
+          const startHour = visibleStart.getHours() + visibleStart.getMinutes() / 60;
+          const endHour = visibleEnd > dayEnd ? 24 : visibleEnd.getHours() + visibleEnd.getMinutes() / 60;
+          return {
+            id: e.id,
+            title: e.title,
+            timeRange: `${formatTime(e.start)} - ${formatTime(e.end)}`,
+            startHour,
+            durationHours: Math.max(endHour - startHour, 0.5),
+          };
+        });
+    }
+    return map;
+  }, [events, days]);
+
   const homeTasks = useMemo(
     () =>
       firestoreTasks.map((t) => ({
@@ -199,6 +256,7 @@ function App({ onSeeAllTasks, onNavPress, events = [], userId, userName }: AppPr
         days={days}
         timeSlots={TIME_SLOTS}
         events={selectedEvents}
+        weekEventsByDay={weekEventsByDay}
         scrollKey={scrollKey}
         tasks={homeTasks}
         navItems={navItems}
@@ -211,6 +269,8 @@ function App({ onSeeAllTasks, onNavPress, events = [], userId, userName }: AppPr
         onSeeAllTasks={onSeeAllTasks}
         onNavPress={onNavPress}
         onEventPress={handleEventPress}
+        onDragCreate={handleDragCreate}
+        allEvents={events}
         showSummary={showSummary}
         summary={summary}
         summaryLoading={summaryLoading}
@@ -218,9 +278,15 @@ function App({ onSeeAllTasks, onNavPress, events = [], userId, userName }: AppPr
       />
       {(showAddModal || editingEvent) && userId && (
         <AddItemModal
+          key={dragCreateInfo ? `${dragCreateInfo.date}-${dragCreateInfo.startTime}-${dragCreateInfo.endTime}` : "default"}
           userId={userId}
           editEvent={editingEvent ?? undefined}
-          onClose={() => { setShowAddModal(false); setEditingEvent(null); }}
+          anchorPosition={eventAnchor ?? undefined}
+          allEvents={events}
+          initialDate={dragCreateInfo?.date}
+          initialStartTime={dragCreateInfo?.startTime}
+          initialEndTime={dragCreateInfo?.endTime}
+          onClose={() => { console.log("[modal] onClose called", new Error().stack); setShowAddModal(false); setEditingEvent(null); setEventAnchor(null); setDragCreateInfo(null); }}
         />
       )}
     </>

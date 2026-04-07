@@ -9,7 +9,7 @@ export function Header({ greeting, name, onAddPress, onAiPress }: HeaderProps) {
   return (
     <header className="flex items-end justify-between px-lg pt-5xl pb-2xl">
       <div className="flex flex-col gap-xs">
-        <p className="text-secondary leading-secondary text-text-secondary">{greeting}</p>
+        <p className="text-body leading-body text-text-secondary">{greeting}</p>
         <h1 className="font-serif text-display leading-display tracking-[-0.3px] text-text-strong">
           {name}
         </h1>

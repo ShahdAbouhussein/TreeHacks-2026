@@ -6,20 +6,7 @@ import type { CalendarEvent } from "../../../../lib/useEvents";
 
 /* ── constants ── */
 
-const CATEGORIES = ["protect", "progress", "maintain", "flourish"] as const;
-type Category = (typeof CATEGORIES)[number];
-const CATEGORY_LABELS: Record<Category, string> = {
-  protect: "Protect",
-  progress: "Progress",
-  maintain: "Maintain",
-  flourish: "Flourish",
-};
-const CATEGORY_TOOLTIPS: Record<Category, string> = {
-  protect: "Urgent, prevent harm",
-  progress: "Move life forward",
-  maintain: "Keep things running",
-  flourish: "Joy & energy",
-};
+/* categories removed — replaced with urgent toggle */
 
 const smoothSpring = { type: "spring" as const, stiffness: 200, damping: 24, mass: 0.8 };
 
@@ -120,7 +107,7 @@ function InlineDatePicker({
     <div className="rounded-[12px] bg-white p-3 shadow-lg border border-border" style={{ width: 280 }}>
       {/* Month header */}
       <div className="flex items-center justify-between mb-1 px-1">
-        <span className="text-secondary leading-secondary font-semibold text-text-strong">
+        <span className="text-body leading-body font-semibold text-text-strong">
           {MONTH_NAMES[viewMonth]} {viewYear}
         </span>
         <div className="flex gap-1">
@@ -250,7 +237,7 @@ function WheelColumn({
       {items.map((item, i) => (
         <div
           key={i}
-          className={`flex items-center justify-center text-secondary leading-secondary transition-all cursor-pointer ${
+          className={`flex items-center justify-center text-body leading-body transition-all cursor-pointer ${
             i === selected ? "font-semibold text-text-strong" : "text-text-tertiary"
           }`}
           style={{ height: WHEEL_ITEM_H, scrollSnapAlign: "center" }}
@@ -322,6 +309,11 @@ interface AddItemModalProps {
   userId: string;
   onClose: () => void;
   editEvent?: CalendarEvent;
+  anchorPosition?: { top: number; left: number };
+  allEvents?: CalendarEvent[];
+  initialDate?: string;       // "YYYY-MM-DD"
+  initialStartTime?: string;  // "HH:mm"
+  initialEndTime?: string;    // "HH:mm"
 }
 
 function toDateStr2(d: Date) {
@@ -332,31 +324,63 @@ function toTimeStr(d: Date) {
   return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 }
 
-export function AddItemModal({ userId, onClose, editEvent }: AddItemModalProps) {
+export function AddItemModal({ userId, onClose, editEvent, anchorPosition, allEvents = [], initialDate, initialStartTime, initialEndTime }: AddItemModalProps) {
   const isEdit = !!editEvent;
   const [title, setTitle] = useState(editEvent?.title ?? "");
   const [details, setDetails] = useState(editEvent?.description ?? "");
-  const [category, setCategory] = useState<Category>("protect");
-  const [tooltip, setTooltip] = useState<Category | null>(null);
-  const tooltipTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [itemType, setItemType] = useState<ItemType>(editEvent ? "event" : "task");
+  const [urgent, setUrgent] = useState(false);
+  const hasDragInit = !!(initialDate || initialStartTime || initialEndTime);
+  const [itemType, setItemType] = useState<ItemType>(editEvent || hasDragInit ? "event" : "task");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
   const todayStr = new Date().toISOString().slice(0, 10);
-  const [startDate, setStartDate] = useState(editEvent ? toDateStr2(editEvent.start) : todayStr);
-  const [startTime, setStartTime] = useState(editEvent ? toTimeStr(editEvent.start) : "09:00");
-  const [endDate, setEndDate] = useState(editEvent ? toDateStr2(editEvent.end) : todayStr);
-  const [endTime, setEndTime] = useState(editEvent ? toTimeStr(editEvent.end) : "10:00");
+  const [startDate, setStartDate] = useState(editEvent ? toDateStr2(editEvent.start) : initialDate || todayStr);
+  const [startTime, setStartTime] = useState(editEvent ? toTimeStr(editEvent.start) : initialStartTime || "09:00");
+  const [endDate, setEndDate] = useState(editEvent ? toDateStr2(editEvent.end) : initialDate || todayStr);
+  const [endTime, setEndTime] = useState(editEvent ? toTimeStr(editEvent.end) : initialEndTime || "10:00");
   const [dueDate, setDueDate] = useState(todayStr);
 
   const [activePicker, setActivePicker] = useState<PickerTarget>(null);
+  const [overlapWarning, setOverlapWarning] = useState<string | null>(null);
 
   const togglePicker = (target: PickerTarget) => {
     setActivePicker((prev) => (prev === target ? null : target));
   };
 
   const canSave = title.trim().length > 0;
+
+  // Helper to find overlapping event
+  const findOverlap = useCallback((sDate: string, sTime: string, eDate: string, eTime: string) => {
+    const newStart = new Date(`${sDate}T${sTime}:00`);
+    const newEnd = new Date(`${eDate}T${eTime}:00`);
+    if (isNaN(newStart.getTime()) || isNaN(newEnd.getTime())) return null;
+
+    return allEvents.find((e) => {
+      if (editEvent && e.id === editEvent.id) return false;
+      return e.start.getTime() < newEnd.getTime() && e.end.getTime() > newStart.getTime();
+    }) || null;
+  }, [allEvents, editEvent]);
+
+  // Check for overlapping events when time/date changes
+  useEffect(() => {
+    if (itemType !== "event") { setOverlapWarning(null); return; }
+
+    const overlap = findOverlap(
+      startDate || todayStr,
+      startTime || "09:00",
+      endDate || todayStr,
+      endTime || "10:00"
+    );
+
+    if (overlap) {
+      const overlapStart = overlap.start.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+      const overlapEnd = overlap.end.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+      setOverlapWarning(`Overlaps with "${overlap.title}" (${overlapStart} – ${overlapEnd})`);
+    } else {
+      setOverlapWarning(null);
+    }
+  }, [startDate, startTime, endDate, endTime, itemType, findOverlap, todayStr]);
 
   const handleSave = async () => {
     if (!canSave || saving) return;
@@ -370,7 +394,8 @@ export function AddItemModal({ userId, onClose, editEvent }: AddItemModalProps) 
           description: details.trim(),
           dueDate: dueDate || todayStr,
           tag: "",
-          category,
+          category: "general",
+          urgent,
           completed: false,
         });
       } else {
@@ -379,6 +404,19 @@ export function AddItemModal({ userId, onClose, editEvent }: AddItemModalProps) 
 
         if (isNaN(startDt.getTime()) || isNaN(endDt.getTime())) {
           setError("Invalid date or time.");
+          setSaving(false);
+          return;
+        }
+
+        // Block save if there's a time conflict
+        const overlap = findOverlap(
+          startDate || todayStr,
+          startTime || "09:00",
+          endDate || todayStr,
+          endTime || "10:00"
+        );
+        if (overlap) {
+          setError(`Time conflict with "${overlap.title}". Please choose a different time.`);
           setSaving(false);
           return;
         }
@@ -423,112 +461,437 @@ export function AddItemModal({ userId, onClose, editEvent }: AddItemModalProps) 
     }
   };
 
-  return (
-    <AnimatePresence>
-      <motion.div
-        className="fixed inset-0 z-50 flex items-center justify-center overflow-visible bg-white/60 backdrop-blur-sm"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        transition={{ duration: 0.25, ease: "easeOut" }}
-        onClick={onClose}
-      >
-        <motion.div
-          className="w-full max-w-[370px] mx-4 rounded-[20px] bg-surface p-5 shadow-subtle overflow-visible"
-          initial={{ opacity: 0, scale: 0.95, y: 20 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.95, y: 20 }}
-          transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          {/* Header */}
-          <div className="flex items-center justify-between">
-            <button type="button" onClick={onClose} className="text-secondary leading-secondary text-text-secondary">
-              Cancel
+  // Use refs to avoid stale closures in the keyboard handler
+  const handleSaveRef = useRef(handleSave);
+  handleSaveRef.current = handleSave;
+  const handleDeleteRef = useRef(handleDelete);
+  handleDeleteRef.current = handleDelete;
+
+  // Keyboard shortcut: ESC to delete (edit) or discard (new), Enter to save
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        if (isEdit) {
+          handleDeleteRef.current();
+        } else {
+          onClose();
+        }
+      }
+      if (e.key === "Enter" && !e.shiftKey && canSave && !saving) { handleSaveRef.current(); }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [canSave, saving, isEdit, onClose]);
+
+  /* ── Helper: relative date label ── */
+  const getRelativeDate = (dateStr: string) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const [y, m, d] = dateStr.split("-").map(Number);
+    const target = new Date(y, m - 1, d);
+    target.setHours(0, 0, 0, 0);
+    const diff = Math.round((target.getTime() - today.getTime()) / 86400000);
+    if (diff === 0) return "Today";
+    if (diff === 1) return "Tomorrow";
+    if (diff === -1) return "Yesterday";
+    return null;
+  };
+
+  /* ── Desktop popover (Chrono-style) ── */
+  const popoverRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (popoverRef.current && !popoverRef.current.contains(e.target as Node)) {
+        // Ignore clicks on the calendar grid (drag-to-create)
+        if ((e.target as HTMLElement).closest?.('[data-calendar-grid]')) return;
+        onClose();
+      }
+    };
+    const timer = setTimeout(() => {
+      document.addEventListener("mousedown", handleClickOutside);
+    }, 400);
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [onClose]);
+
+  const desktopPopover = (
+    <motion.div
+      ref={popoverRef}
+      className="fixed z-50 hidden lg:block w-[460px] rounded-[14px] bg-white border border-divider shadow-lg overflow-visible"
+      style={
+        anchorPosition
+          ? { top: Math.min(anchorPosition.top, window.innerHeight - 500), left: Math.max(8, anchorPosition.left - 470) }
+          : { right: 32, top: 94 }
+      }
+      initial={{ opacity: 0, y: -8 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -8 }}
+      transition={{ duration: 0.2, ease: "easeOut" }}
+    >
+        {/* Title + Notes section */}
+        <div className="px-5 pt-5 pb-4">
+          <div className="flex items-start gap-3">
+            <div className="mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full" style={{ backgroundColor: itemType === "event" ? "var(--color-accent-dark)" : "var(--color-accent)" }}>
+              {itemType === "event" ? (
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M8 2V6M16 2V6M3 10H21M5 4H19C20.1046 4 21 4.89543 21 6V20C21 21.1046 20.1046 22 19 22H5C3.89543 22 3 21.1046 3 20V6C3 4.89543 3.89543 4 5 4Z" />
+                </svg>
+              ) : (
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20 6L9 17L4 12" />
+                </svg>
+              )}
+            </div>
+            <div className="flex-1 min-w-0">
+              <input
+                className="w-full bg-transparent text-body leading-body font-medium text-text-strong placeholder:text-text-tertiary focus:outline-none"
+                placeholder={itemType === "event" ? "Event title" : "Task title"}
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                autoFocus
+              />
+              <input
+                className="mt-1 w-full bg-transparent text-body leading-body text-text-secondary placeholder:text-text-tertiary focus:outline-none"
+                placeholder={itemType === "event" ? "Add description" : "Add notes"}
+                value={details}
+                onChange={(e) => setDetails(e.target.value)}
+              />
+            </div>
+          </div>
+        </div>
+
+        {error && (
+          <p className="px-5 pb-2 text-caption leading-caption text-red-500">{error}</p>
+        )}
+
+        {overlapWarning && (
+          <div className="mx-5 mb-2 flex items-start gap-2 rounded-[10px] bg-warning/10 px-3 py-2.5">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#F4B400" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0zM12 9v4M12 17h.01" />
+            </svg>
+            <p className="text-caption leading-caption text-text-strong">{overlapWarning}</p>
+          </div>
+        )}
+
+        {/* Fields */}
+        <AnimatePresence mode="wait" initial={false}>
+          {itemType === "task" ? (
+            <motion.div
+              key="task-fields-desktop"
+              initial={{ opacity: 0, y: 6, filter: "blur(4px)" }}
+              animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+              exit={{ opacity: 0, y: -6, filter: "blur(4px)" }}
+              transition={{ duration: 0.25, ease: [0.25, 0.1, 0.25, 1] }}
+            >
+              {/* Schedule */}
+              <div className="border-t border-divider px-5 py-4">
+                <p className="text-label leading-label font-medium text-text-tertiary uppercase tracking-wide mb-3">Schedule</p>
+                <div className="relative">
+                  <button type="button" onClick={() => togglePicker("dueDate")} className="flex items-center gap-2 text-body leading-body text-text-strong hover:text-accent transition-colors">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-text-tertiary">
+                      <circle cx="12" cy="12" r="10" /><path d="M12 6V12L16 14" />
+                    </svg>
+                    {formatShortDate(dueDate)}
+                  </button>
+                  <AnimatePresence>
+                    {activePicker === "dueDate" && (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.95, y: -4 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.95, y: -4 }}
+                        transition={{ duration: 0.18, ease: "easeOut" }}
+                        className="absolute left-full top-0 z-[60] ml-2"
+                      >
+                        <InlineDatePicker value={dueDate} onChange={(d) => { setDueDate(d); setActivePicker(null); }} />
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              </div>
+
+              {/* Urgent toggle removed */}
+            </motion.div>
+          ) : (
+            <motion.div
+              key="event-fields-desktop"
+              initial={{ opacity: 0, y: 6, filter: "blur(4px)" }}
+              animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+              exit={{ opacity: 0, y: -6, filter: "blur(4px)" }}
+              transition={{ duration: 0.25, ease: [0.25, 0.1, 0.25, 1] }}
+            >
+              {/* Time */}
+              <div className="border-t border-divider px-5 py-4">
+                <p className="text-label leading-label font-medium text-text-tertiary uppercase tracking-wide mb-3">Time</p>
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-text-tertiary">
+                      <circle cx="12" cy="12" r="10" /><path d="M12 6V12L16 14" />
+                    </svg>
+                    <div className="relative">
+                      <button type="button" onClick={() => togglePicker("startTime")} className="text-body leading-body text-text-strong hover:text-accent transition-colors">
+                        {formatTime12(startTime)}
+                      </button>
+                      {activePicker === "startTime" && (
+                        <div className="absolute left-full top-0 z-[60] ml-2">
+                          <WheelTimePicker value={startTime} onChange={setStartTime} />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <span className="text-text-tertiary">→</span>
+                  <div className="relative">
+                    <button type="button" onClick={() => togglePicker("endTime")} className="text-body leading-body text-text-strong hover:text-accent transition-colors">
+                      {formatTime12(endTime)}
+                    </button>
+                    {activePicker === "endTime" && (
+                      <div className="absolute left-full top-0 z-[60] ml-2">
+                        <WheelTimePicker value={endTime} onChange={setEndTime} />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Date */}
+              <div className="border-t border-divider px-5 py-4">
+                <p className="text-label leading-label font-medium text-text-tertiary uppercase tracking-wide mb-3">Date</p>
+                <div className="relative">
+                  <button type="button" onClick={() => togglePicker("startDate")} className="flex items-center gap-2 text-body leading-body text-text-strong hover:text-accent transition-colors">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-text-tertiary">
+                      <path d="M8 2V6M16 2V6M3 10H21M5 4H19C20.1046 4 21 4.89543 21 6V20C21 21.1046 20.1046 22 19 22H5C3.89543 22 3 21.1046 3 20V6C3 4.89543 3.89543 4 5 4Z" />
+                    </svg>
+                    {formatShortDate(startDate)}
+                  </button>
+                  <AnimatePresence>
+                    {activePicker === "startDate" && (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.95, y: -4 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.95, y: -4 }}
+                        transition={{ duration: 0.18, ease: "easeOut" }}
+                        className="absolute left-full top-0 z-[60] ml-2"
+                      >
+                        <InlineDatePicker value={startDate} onChange={(d) => { setStartDate(d); setEndDate(d); setActivePicker(null); }} />
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Delete button moved to footer bar */}
+
+        {/* Footer bar — Chrono style */}
+        <div className="flex items-center justify-between border-t border-divider px-5 py-3">
+          {/* Type toggle icons */}
+          {!isEdit ? (
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => { setItemType("task"); setActivePicker(null); }}
+                className={`flex h-8 w-8 items-center justify-center rounded-[12px] transition-colors ${
+                  itemType === "task" ? "bg-subtle-fill text-text-strong" : "text-text-tertiary hover:bg-subtle-fill"
+                }`}
+                title="Task"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20 6L9 17L4 12" />
+                </svg>
+              </button>
+              <button
+                type="button"
+                onClick={() => { setItemType("event"); setActivePicker(null); }}
+                className={`flex h-8 w-8 items-center justify-center rounded-[12px] transition-colors ${
+                  itemType === "event" ? "bg-subtle-fill text-text-strong" : "text-text-tertiary hover:bg-subtle-fill"
+                }`}
+                title="Event"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M8 2V6M16 2V6M3 10H21M5 4H19C20.1046 4 21 4.89543 21 6V20C21 21.1046 20.1046 22 19 22H5C3.89543 22 3 21.1046 3 20V6C3 4.89543 3.89543 4 5 4Z" />
+                </svg>
+              </button>
+            </div>
+          ) : <div />}
+
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={isEdit ? handleDelete : onClose}
+              className={`rounded-[12px] px-3 py-1.5 text-small leading-small font-medium transition-colors ${
+                isEdit
+                  ? "bg-red-50 text-red-500 hover:bg-red-100"
+                  : "bg-subtle-fill text-text-secondary hover:bg-gray-200"
+              }`}
+            >
+              {isEdit ? "Delete" : "Discard"}
             </button>
-            <span className="text-secondary leading-secondary font-semibold text-text-strong">{isEdit ? "Edit" : "New"}</span>
             <button
               type="button"
               onClick={handleSave}
               disabled={!canSave || saving}
-              className="text-secondary leading-secondary font-medium text-accent disabled:opacity-40"
+              className="rounded-[12px] bg-accent px-3 py-1.5 text-small leading-small font-medium text-white disabled:opacity-30 hover:bg-accent-dark transition-colors"
             >
-              {saving ? "Saving…" : "Save"}
+              {saving ? "Saving…" : "+ Add"}
             </button>
           </div>
+        </div>
+      </motion.div>
+  );
 
-          {/* Type toggle (hidden in edit mode) */}
-          {!isEdit && (
-            <div className="mt-4">
-              <LayoutGroup id="type-toggle">
-                <div className="flex rounded-[10px] bg-background p-[3px]">
-                  {(["task", "event"] as const).map((t) => (
-                    <button
-                      key={t}
-                      type="button"
-                      onClick={() => { setItemType(t); setActivePicker(null); }}
-                      className="relative flex-1 rounded-[8px] py-[6px] text-center text-caption leading-caption outline-none"
-                    >
-                      {itemType === t && (
-                        <motion.div
-                          layoutId="type-pill"
-                          className="absolute inset-0 rounded-[8px] bg-surface shadow-subtle"
-                          transition={smoothSpring}
-                        />
-                      )}
-                      <span className={`relative z-10 ${itemType === t ? "text-text-strong font-medium" : "text-text-secondary"}`}>
-                        {t === "task" ? "Task" : "Event"}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </LayoutGroup>
-            </div>
-          )}
+  /* ── Mobile modal (unchanged) ── */
+  const mobileModal = (
+    <motion.div
+      className="fixed inset-0 z-50 flex items-center justify-center overflow-visible bg-white/60 backdrop-blur-sm lg:hidden"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.25, ease: "easeOut" }}
+      onClick={onClose}
+    >
+      <motion.div
+        className="w-full max-w-[370px] mx-4 rounded-[20px] bg-surface p-5 shadow-subtle overflow-visible"
+        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 20 }}
+        transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <button type="button" onClick={onClose} className="text-body leading-body text-text-secondary">
+            Cancel
+          </button>
+          <span className="text-body leading-body font-semibold text-text-strong">{isEdit ? "Edit" : "New"}</span>
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={!canSave || saving}
+            className="text-body leading-body font-medium text-accent disabled:opacity-40"
+          >
+            {saving ? "Saving…" : "Save"}
+          </button>
+        </div>
 
-          {/* Title + Details card */}
-          <div className="mt-4 rounded-[16px] bg-background px-4 py-3">
-            <input
-              className="w-full bg-transparent text-secondary leading-body text-text-strong placeholder:text-text-tertiary focus:outline-none"
-              placeholder="Title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              autoFocus
-            />
-            <div className="my-2 h-px bg-divider" />
-            <input
-              className="w-full bg-transparent text-secondary leading-body text-text-strong placeholder:text-text-tertiary focus:outline-none"
-              placeholder="Add details"
-              value={details}
-              onChange={(e) => setDetails(e.target.value)}
-            />
+        {/* Type toggle (hidden in edit mode) */}
+        {!isEdit && (
+          <div className="mt-4">
+            <LayoutGroup id="type-toggle">
+              <div className="flex rounded-[10px] bg-background p-[3px]">
+                {(["task", "event"] as const).map((t) => (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => { setItemType(t); setActivePicker(null); }}
+                    className="relative flex-1 rounded-[8px] py-[6px] text-center text-caption leading-caption outline-none"
+                  >
+                    {itemType === t && (
+                      <motion.div
+                        layoutId="type-pill"
+                        className="absolute inset-0 rounded-[8px] bg-surface shadow-subtle"
+                        transition={smoothSpring}
+                      />
+                    )}
+                    <span className={`relative z-10 ${itemType === t ? "text-text-strong font-medium" : "text-text-secondary"}`}>
+                      {t === "task" ? "Task" : "Event"}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </LayoutGroup>
           </div>
+        )}
 
-          {error && (
-            <p className="mt-2 px-1 text-caption leading-caption text-red-500">{error}</p>
-          )}
+        {/* Title + Details card */}
+        <div className="mt-4 rounded-[16px] bg-background px-4 py-3">
+          <input
+            className="w-full bg-transparent text-secondary leading-body text-text-strong placeholder:text-text-tertiary focus:outline-none"
+            placeholder="Title"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            autoFocus
+          />
+          <div className="my-2 h-px bg-divider" />
+          <input
+            className="w-full bg-transparent text-secondary leading-body text-text-strong placeholder:text-text-tertiary focus:outline-none"
+            placeholder="Add details"
+            value={details}
+            onChange={(e) => setDetails(e.target.value)}
+          />
+        </div>
 
-          {/* Date / time section */}
-          <AnimatePresence mode="wait" initial={false}>
-            {itemType === "task" ? (
-              <motion.div
-                key="task-fields"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.2, ease: "easeInOut" }}
-                className="mt-4 rounded-[16px] bg-background px-4"
-              >
-                <div className="flex items-center justify-between py-3">
-                  <span className="text-secondary leading-secondary text-text-strong">Due date</span>
+        {overlapWarning && (
+          <div className="mt-2 flex items-start gap-2 rounded-[10px] bg-warning/10 px-3 py-2.5">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#F4B400" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0zM12 9v4M12 17h.01" />
+            </svg>
+            <p className="text-caption leading-caption text-text-strong">{overlapWarning}</p>
+          </div>
+        )}
+
+        {error && (
+          <p className="mt-2 px-1 text-caption leading-caption text-red-500">{error}</p>
+        )}
+
+        {/* Date / time section */}
+        <AnimatePresence mode="wait" initial={false}>
+          {itemType === "task" ? (
+            <motion.div
+              key="task-fields"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2, ease: "easeInOut" }}
+              className="mt-4 rounded-[16px] bg-background px-4"
+            >
+              <div className="flex items-center justify-between py-3">
+                <span className="text-body leading-body text-text-strong">Due date</span>
+                <div className="relative">
+                  <Pill
+                    label={formatShortDate(dueDate)}
+                    isActive={activePicker === "dueDate"}
+                    onClick={() => togglePicker("dueDate")}
+                  />
+                  <AnimatePresence>
+                    {activePicker === "dueDate" && (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.95, y: -4 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.95, y: -4 }}
+                        transition={{ duration: 0.18, ease: "easeOut" }}
+                        className="absolute right-0 top-full z-[60] mt-1"
+                      >
+                        <InlineDatePicker value={dueDate} onChange={(d) => { setDueDate(d); setActivePicker(null); }} />
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              </div>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="event-fields"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2, ease: "easeInOut" }}
+              className="mt-4 rounded-[16px] bg-background px-4"
+            >
+              {/* Starts row */}
+              <div className="flex items-center justify-between py-3">
+                <span className="text-body leading-body text-text-strong">Starts</span>
+                <div className="flex gap-2">
                   <div className="relative">
                     <Pill
-                      label={formatShortDate(dueDate)}
-                      isActive={activePicker === "dueDate"}
-                      onClick={() => togglePicker("dueDate")}
+                      label={formatShortDate(startDate)}
+                      isActive={activePicker === "startDate"}
+                      onClick={() => togglePicker("startDate")}
                     />
                     <AnimatePresence>
-                      {activePicker === "dueDate" && (
+                      {activePicker === "startDate" && (
                         <motion.div
                           initial={{ opacity: 0, scale: 0.95, y: -4 }}
                           animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -536,168 +899,91 @@ export function AddItemModal({ userId, onClose, editEvent }: AddItemModalProps) 
                           transition={{ duration: 0.18, ease: "easeOut" }}
                           className="absolute right-0 top-full z-[60] mt-1"
                         >
-                          <InlineDatePicker value={dueDate} onChange={(d) => { setDueDate(d); setActivePicker(null); }} />
+                          <InlineDatePicker value={startDate} onChange={(d) => { setStartDate(d); setActivePicker(null); }} />
                         </motion.div>
                       )}
                     </AnimatePresence>
                   </div>
-                </div>
-              </motion.div>
-            ) : (
-              <motion.div
-                key="event-fields"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.2, ease: "easeInOut" }}
-                className="mt-4 rounded-[16px] bg-background px-4"
-              >
-                {/* Starts row */}
-                <div className="flex items-center justify-between py-3">
-                  <span className="text-secondary leading-secondary text-text-strong">Starts</span>
-                  <div className="flex gap-2">
-                    <div className="relative">
-                      <Pill
-                        label={formatShortDate(startDate)}
-                        isActive={activePicker === "startDate"}
-                        onClick={() => togglePicker("startDate")}
-                      />
-                      <AnimatePresence>
-                        {activePicker === "startDate" && (
-                          <motion.div
-                            initial={{ opacity: 0, scale: 0.95, y: -4 }}
-                            animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.95, y: -4 }}
-                            transition={{ duration: 0.18, ease: "easeOut" }}
-                            className="absolute right-0 top-full z-[60] mt-1"
-                          >
-                            <InlineDatePicker value={startDate} onChange={(d) => { setStartDate(d); setActivePicker(null); }} />
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
-                    <div className="relative">
-                      <Pill
-                        label={formatTime12(startTime)}
-                        isActive={activePicker === "startTime"}
-                        onClick={() => togglePicker("startTime")}
-                      />
-                      {activePicker === "startTime" && (
-                        <div className="absolute right-0 top-full z-[60] mt-1">
-                          <WheelTimePicker value={startTime} onChange={setStartTime} />
-                        </div>
-                      )}
-                    </div>
+                  <div className="relative">
+                    <Pill
+                      label={formatTime12(startTime)}
+                      isActive={activePicker === "startTime"}
+                      onClick={() => togglePicker("startTime")}
+                    />
+                    {activePicker === "startTime" && (
+                      <div className="absolute right-0 top-full z-[60] mt-1">
+                        <WheelTimePicker value={startTime} onChange={setStartTime} />
+                      </div>
+                    )}
                   </div>
                 </div>
+              </div>
 
-                <div className="h-px bg-divider" />
+              <div className="h-px bg-divider" />
 
-                {/* Ends row */}
-                <div className="flex items-center justify-between py-3">
-                  <span className="text-secondary leading-secondary text-text-strong">Ends</span>
-                  <div className="flex gap-2">
-                    <div className="relative">
-                      <Pill
-                        label={formatShortDate(endDate)}
-                        isActive={activePicker === "endDate"}
-                        onClick={() => togglePicker("endDate")}
-                      />
-                      <AnimatePresence>
-                        {activePicker === "endDate" && (
-                          <motion.div
-                            initial={{ opacity: 0, scale: 0.95, y: -4 }}
-                            animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.95, y: -4 }}
-                            transition={{ duration: 0.18, ease: "easeOut" }}
-                            className="absolute right-0 top-full z-[60] mt-1"
-                          >
-                            <InlineDatePicker value={endDate} onChange={(d) => { setEndDate(d); setActivePicker(null); }} />
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
-                    <div className="relative">
-                      <Pill
-                        label={formatTime12(endTime)}
-                        isActive={activePicker === "endTime"}
-                        onClick={() => togglePicker("endTime")}
-                      />
-                      {activePicker === "endTime" && (
-                        <div className="absolute right-0 top-full z-[60] mt-1">
-                          <WheelTimePicker value={endTime} onChange={setEndTime} />
-                        </div>
+              {/* Ends row */}
+              <div className="flex items-center justify-between py-3">
+                <span className="text-body leading-body text-text-strong">Ends</span>
+                <div className="flex gap-2">
+                  <div className="relative">
+                    <Pill
+                      label={formatShortDate(endDate)}
+                      isActive={activePicker === "endDate"}
+                      onClick={() => togglePicker("endDate")}
+                    />
+                    <AnimatePresence>
+                      {activePicker === "endDate" && (
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.95, y: -4 }}
+                          animate={{ opacity: 1, scale: 1, y: 0 }}
+                          exit={{ opacity: 0, scale: 0.95, y: -4 }}
+                          transition={{ duration: 0.18, ease: "easeOut" }}
+                          className="absolute right-0 top-full z-[60] mt-1"
+                        >
+                          <InlineDatePicker value={endDate} onChange={(d) => { setEndDate(d); setActivePicker(null); }} />
+                        </motion.div>
                       )}
-                    </div>
+                    </AnimatePresence>
+                  </div>
+                  <div className="relative">
+                    <Pill
+                      label={formatTime12(endTime)}
+                      isActive={activePicker === "endTime"}
+                      onClick={() => togglePicker("endTime")}
+                    />
+                    {activePicker === "endTime" && (
+                      <div className="absolute right-0 top-full z-[60] mt-1">
+                        <WheelTimePicker value={endTime} onChange={setEndTime} />
+                      </div>
+                    )}
                   </div>
                 </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* Delete button (edit mode only) */}
-          {isEdit && (
-            <button
-              type="button"
-              onClick={handleDelete}
-              className="mt-4 w-full rounded-[16px] bg-background py-3 text-secondary leading-secondary font-medium text-red-500"
-            >
-              Delete Event
-            </button>
+              </div>
+            </motion.div>
           )}
+        </AnimatePresence>
 
-          {/* Priority selector (hidden in edit mode since events don't have categories) */}
-          {!isEdit && (
-            <div className="mt-4 rounded-[16px] bg-background px-4 py-3">
-              <p className="text-caption leading-caption text-text-tertiary mb-3">
-                How should we prioritize this item?
-              </p>
-              <LayoutGroup id="priority-pills">
-                <div className="relative flex flex-wrap gap-2">
-                  {CATEGORIES.map((cat) => (
-                    <div key={cat} className="relative">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setCategory(cat);
-                          if (tooltipTimer.current) clearTimeout(tooltipTimer.current);
-                          setTooltip(cat);
-                          tooltipTimer.current = setTimeout(() => setTooltip(null), 1800);
-                        }}
-                        className="relative rounded-full px-[16px] py-[7px] text-secondary leading-secondary outline-none transition-colors duration-200"
-                      >
-                        {category === cat && (
-                          <motion.div
-                            layoutId="priority-pill"
-                            className="absolute inset-0 rounded-full border border-border bg-surface"
-                            transition={smoothSpring}
-                          />
-                        )}
-                        <span className={`relative z-10 ${category === cat ? "text-text-strong" : "text-text-secondary"}`}>
-                          {CATEGORY_LABELS[cat]}
-                        </span>
-                      </button>
-                      <AnimatePresence>
-                        {tooltip === cat && (
-                          <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            transition={{ duration: 0.2 }}
-                            className="absolute left-1/2 top-full z-30 mt-2 -translate-x-1/2 w-[120px] text-center rounded-[8px] bg-white px-2 py-[5px] text-caption leading-caption text-text-secondary shadow-lg border border-border"
-                          >
-                            {CATEGORY_TOOLTIPS[cat]}
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
-                  ))}
-                </div>
-              </LayoutGroup>
-            </div>
-          )}
-        </motion.div>
+        {/* Delete button (edit mode only) */}
+        {isEdit && (
+          <button
+            type="button"
+            onClick={handleDelete}
+            className="mt-4 w-full rounded-[16px] bg-background py-3 text-body leading-body font-medium text-red-500"
+          >
+            Delete Event
+          </button>
+        )}
+
+        {/* Urgent toggle removed */}
       </motion.div>
+    </motion.div>
+  );
+
+  const isDesktop = typeof window !== "undefined" && window.innerWidth >= 1024;
+
+  return (
+    <AnimatePresence>
+      {isDesktop ? desktopPopover : mobileModal}
     </AnimatePresence>
   );
 }

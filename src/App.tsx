@@ -13,9 +13,11 @@ import { BottomNav } from "./home/features/home/components/BottomNav";
 import TasksPage from "./home/features/tasks/TasksPage";
 import CalendarPage from "./home/features/calendar/CalendarPage";
 import Chat from "./pages/Chat";
+import AssistantPage from "./pages/AssistantPage";
 import { parseIcsFile } from "./lib/icsParser";
 import { importEventsToFirestore } from "./lib/importEvents";
 import { useEvents } from "./lib/useEvents";
+import { DesktopSidebar } from "./components/DesktopSidebar";
 
 const KaliLogo = () => (
   <svg width="49" height="39" viewBox="0 0 49 39" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -59,8 +61,10 @@ export default function App() {
   const [deleting, setDeleting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [activeTab, setActiveTab] = useState("home");
-  // Chat popover open state
   const [chatOpen, setChatOpen] = useState(false);
+  const [settingsTab, setSettingsTab] = useState<"profile" | "calendars" | "tasks" | "appearance">("profile");
+  // Track if add modal should open (triggered from desktop sidebar)
+  const [desktopAddTrigger, setDesktopAddTrigger] = useState(0);
 
   const { events } = useEvents(user?.uid);
 
@@ -77,12 +81,9 @@ export default function App() {
     setAuthError("");
     try {
       if (isLogin) {
-        // SIGN IN
         await signInWithEmailAndPassword(auth, email, password);
         console.log("Signed in");
-        // onAuthStateChanged will set user, app renders main view
       } else {
-        // SIGN UP
         const userCredential = await createUserWithEmailAndPassword(
           auth,
           email,
@@ -97,7 +98,6 @@ export default function App() {
         });
 
         console.log("User + Firestore doc created");
-        // Go to ICS upload step instead of entering app
         setStep(3);
       }
     } catch (error: any) {
@@ -151,7 +151,7 @@ export default function App() {
         <div className="flex min-h-screen items-center justify-center bg-background">
           <div className="w-full max-w-[402px] px-lg">
             <KaliLogo />
-            <p className="mt-3 text-secondary leading-secondary font-semibold text-text-secondary">
+            <p className="mt-3 text-body leading-body font-semibold text-text-secondary">
               Welcome to Kali!
             </p>
             <h1 className="mt-1 font-serif text-display leading-display tracking-[-0.3px] text-text-strong">
@@ -162,14 +162,14 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => { setIsLogin(true); setStep(1); setAuthError(""); }}
-                className="flex h-14 w-full items-center justify-center rounded-[8px] bg-surface text-secondary leading-secondary font-medium text-text-strong transition-colors hover:bg-subtle-fill"
+                className="flex h-14 w-full items-center justify-center rounded-[8px] bg-surface text-body leading-body font-medium text-text-strong transition-colors hover:bg-subtle-fill"
               >
                 Sign in with email
               </button>
               <button
                 type="button"
                 onClick={() => { setIsLogin(false); setStep(1); setAuthError(""); }}
-                className="text-secondary leading-secondary text-accent"
+                className="text-body leading-body text-accent"
               >
                 I don't have an account
               </button>
@@ -258,7 +258,7 @@ export default function App() {
         <div className="relative flex min-h-screen items-center justify-center bg-background">
           <BackChevron onClick={() => { setStep(0); setAuthError(""); }} />
           <div className="w-full max-w-[402px] px-lg">
-            <p className="text-secondary leading-secondary text-text-strong max-w-[280px]">
+            <p className="text-body leading-body text-text-strong max-w-[280px]">
               The transition is easy! Simply upload your calendar via and .ics.
             </p>
 
@@ -313,11 +313,10 @@ export default function App() {
       );
     }
 
-    // Fallback to welcome (shouldn't reach here)
     return null;
   }
 
-  // Tasks page has no selected nav item
+  // Tasks page has no selected nav item on mobile
   const noActive = activeTab === "tasks";
   const navItems = [
     {
@@ -348,218 +347,316 @@ export default function App() {
 
   const handleNavItemPress = (id: string) => {
     if (id === "chat") {
-      setChatOpen(true);
+      // Desktop: render as full page. Mobile: open modal.
+      if (window.innerWidth >= 1024) {
+        setActiveTab("chat");
+      } else {
+        setChatOpen(true);
+      }
       return;
     }
     setActiveTab(id);
   };
 
   return (
-    <div className="flex flex-col">
-      <div className="pb-24">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={activeTab}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2, ease: "easeInOut" }}
-          >
-            {activeTab === "home" && (
-              <Home
-                onSeeAllTasks={() => setActiveTab("tasks")}
-                onNavPress={handleNavItemPress}
-                events={events}
-                userId={user.uid}
-                userName={user.displayName || user.email?.split("@")[0] || "there"}
-              />
-            )}
-            {/* Chat is now a popover, not a page */}
-            {activeTab === "tasks" && (
-              <TasksPage
-                onBack={() => setActiveTab("home")}
-                userId={user.uid}
-              />
-            )}
-            {activeTab === "calendar" && (
-              <CalendarPage
-                onBack={() => setActiveTab("home")}
-                events={events}
-                userId={user.uid}
-                onNavPress={handleNavItemPress}
-              />
-            )}
-            {activeTab === "profile" && (
-              <div className="relative mx-auto max-w-[402px] bg-background pb-28">
-                <header className="flex items-end justify-between px-lg pt-5xl pb-2xl">
-                  <div className="flex flex-col gap-xs">
-                    <h1 className="font-serif text-display leading-display tracking-[-0.3px] text-text-strong">
-                      Profile
-                    </h1>
-                  </div>
-                </header>
+    <div className="flex min-h-screen">
+      {/* Desktop sidebar - hidden on mobile */}
+      <DesktopSidebar
+        activeTab={activeTab}
+        onNavPress={handleNavItemPress}
+        userEmail="carmah@stanford.edu"
+        onAddPress={() => setDesktopAddTrigger((n) => n + 1)}
+      />
 
-                <div className="mx-lg space-y-lg">
-                  <div className="rounded-[16px] bg-surface p-2xl shadow-subtle">
-                    <div className="flex items-center justify-between border-b border-divider pb-lg">
-                      <div className="space-y-xs">
-                        <p className="text-caption leading-caption uppercase tracking-[0.12em] text-text-tertiary">
-                          Email
-                        </p>
-                        <p className="text-body leading-body text-text-strong">
-                          {user.email}
-                        </p>
-                      </div>
-                      <span className="rounded-full border border-border px-md py-xs text-caption leading-caption text-text-secondary">
-                        Primary
-                      </span>
-                    </div>
-                    <div className="pt-lg text-secondary leading-secondary text-text-secondary">
-                      Member since just now.
-                    </div>
-                  </div>
-                  <div className="rounded-[16px] bg-surface p-2xl shadow-subtle">
-                    <div className="space-y-xs">
-                      <p className="text-caption leading-caption uppercase tracking-[0.12em] text-text-tertiary">
-                        Calendar
-                      </p>
-                      <p className="text-body leading-body text-text-strong">
-                        {uploadedFileName ? "Calendar uploaded" : "Upload your calendar"}
-                      </p>
-                    </div>
-
-                    {uploadedFileName ? (
-                      <div className="mt-lg space-y-3">
-                        {/* Uploaded file display */}
-                        <div className="flex items-center gap-3 rounded-[12px] bg-background px-4 py-3">
-                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6F8F7A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                            <polyline points="14 2 14 8 20 8" />
-                          </svg>
-                          <span className="flex-1 truncate text-secondary leading-secondary font-medium text-text-strong">
-                            {uploadedFileName}
-                          </span>
-                          <span className="text-caption leading-caption font-medium" style={{ color: "#6F8F7A" }}>
-                            {events.length} event{events.length !== 1 ? "s" : ""}
-                          </span>
+      {/* Main content */}
+      <div className="flex flex-1 flex-col lg:min-h-0 lg:max-h-screen lg:overflow-y-auto">
+        <div className="pb-24 lg:pb-0">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2, ease: "easeInOut" }}
+            >
+              {activeTab === "home" && (
+                <Home
+                  onSeeAllTasks={() => setActiveTab("tasks")}
+                  onNavPress={handleNavItemPress}
+                  events={events}
+                  userId={user.uid}
+                  userName="Carmah"
+                  desktopAddTrigger={desktopAddTrigger}
+                />
+              )}
+              {activeTab === "tasks" && (
+                <TasksPage
+                  onBack={() => setActiveTab("home")}
+                  userId={user.uid}
+                />
+              )}
+              {activeTab === "calendar" && (
+                <CalendarPage
+                  onBack={() => setActiveTab("home")}
+                  events={events}
+                  userId={user.uid}
+                  onNavPress={handleNavItemPress}
+                />
+              )}
+              {activeTab === "chat" && (
+                <AssistantPage userId={user.uid} events={events} />
+              )}
+              {activeTab === "profile" && (
+                <div className="relative mx-auto max-w-[402px] lg:max-w-none lg:w-full bg-background pb-28 lg:pb-0 min-h-screen">
+                  {/* Mobile: simple stacked layout */}
+                  <div className="lg:hidden">
+                    <header className="flex items-end justify-between px-lg pt-5xl pb-2xl">
+                      <h1 className="font-serif text-display leading-display tracking-[-0.3px] text-text-strong">
+                        Settings
+                      </h1>
+                    </header>
+                    <div className="mx-lg space-y-lg">
+                      {/* Profile card */}
+                      <div className="rounded-[16px] bg-surface p-2xl shadow-subtle">
+                        <div className="flex items-center gap-3 mb-4">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-accent/15 text-accent text-body font-semibold">
+                            {(user?.displayName || "C")[0].toUpperCase()}
+                          </div>
+                          <div>
+                            <p className="text-body leading-body font-medium text-text-strong">{user?.displayName || "User"}</p>
+                            <p className="text-caption leading-caption text-text-secondary">carmah@stanford.edu</p>
+                          </div>
                         </div>
-
-                        {/* Add another file */}
-                        <button
-                          className="flex h-11 w-full items-center justify-center rounded-full border border-dashed border-border text-caption leading-caption font-medium text-text-secondary transition-colors hover:bg-subtle-fill"
-                          onClick={() => fileInputRef.current?.click()}
-                          disabled={importing}
-                        >
-                          {importing ? "Importing…" : "Add another .ics file"}
-                        </button>
-
-                        {/* Remove file & delete all events */}
-                        <button
-                          className="flex h-11 w-full items-center justify-center rounded-full text-caption leading-caption font-medium text-red-500 transition-colors hover:bg-red-50"
-                          onClick={async () => {
-                            if (!user || deleting) return;
-                            setDeleting(true);
-                            setAuthError("");
-                            setImportSuccess("");
-                            try {
-                              const eventsCol = collection(db, "users", user.uid, "events");
-                              const snapshot = await getDocs(eventsCol);
-                              // Delete in batches of 500
-                              for (let i = 0; i < snapshot.docs.length; i += 500) {
-                                const batch = writeBatch(db);
-                                snapshot.docs.slice(i, i + 500).forEach((d) => batch.delete(d.ref));
-                                await batch.commit();
-                              }
-                              setUploadedFileName("");
-                              setImportSuccess(`Deleted ${snapshot.docs.length} event${snapshot.docs.length !== 1 ? "s" : ""}.`);
-                            } catch (err: any) {
-                              console.error("Delete events failed:", err);
-                              setAuthError(`Delete failed: ${err.message || err}`);
-                            } finally {
-                              setDeleting(false);
-                            }
-                          }}
-                          disabled={deleting}
-                        >
-                          {deleting ? "Deleting…" : "Remove file & delete all events"}
-                        </button>
                       </div>
-                    ) : (
-                      <div className="mt-lg">
-                        <button
-                          className="flex h-12 w-full items-center justify-center rounded-full border border-dashed border-border text-secondary leading-secondary font-medium text-text-secondary transition-colors hover:bg-subtle-fill"
-                          onClick={() => fileInputRef.current?.click()}
-                          disabled={importing}
-                        >
-                          {importing
-                            ? "Importing…"
-                            : icsFile
-                              ? icsFile.name
-                              : "Choose .ics file"}
-                        </button>
+
+                      {/* Calendar card */}
+                      <div className="rounded-[16px] bg-surface p-2xl shadow-subtle">
+                        <p className="text-body leading-body font-medium text-text-strong mb-1">Calendar</p>
+                        <p className="text-caption leading-caption text-text-secondary mb-3">
+                          {uploadedFileName ? "Calendar uploaded" : "Import your .ics calendar file"}
+                        </p>
+
+                        {uploadedFileName ? (
+                          <div className="space-y-3">
+                            <div className="flex items-center gap-3 rounded-[12px] bg-background px-4 py-3">
+                              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6F8F7A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                <polyline points="14 2 14 8 20 8" />
+                              </svg>
+                              <span className="flex-1 truncate text-caption leading-caption font-medium text-text-strong">{uploadedFileName}</span>
+                              <span className="text-caption leading-caption font-medium" style={{ color: "#6F8F7A" }}>{events.length} events</span>
+                            </div>
+                            <button className="flex h-11 w-full items-center justify-center rounded-[12px] border border-dashed border-border text-caption leading-caption font-medium text-text-secondary hover:bg-subtle-fill" onClick={() => fileInputRef.current?.click()} disabled={importing}>
+                              {importing ? "Importing..." : "Add another .ics file"}
+                            </button>
+                            <button className="flex h-11 w-full items-center justify-center rounded-[12px] text-caption leading-caption font-medium text-red-500 hover:bg-red-50" onClick={async () => { if (!user || deleting) return; setDeleting(true); setAuthError(""); setImportSuccess(""); try { const eventsCol = collection(db, "users", user.uid, "events"); const snapshot = await getDocs(eventsCol); for (let i = 0; i < snapshot.docs.length; i += 500) { const batch = writeBatch(db); snapshot.docs.slice(i, i + 500).forEach((d) => batch.delete(d.ref)); await batch.commit(); } setUploadedFileName(""); setImportSuccess(`Deleted ${snapshot.docs.length} events.`); } catch (err: any) { setAuthError(`Delete failed: ${err.message || err}`); } finally { setDeleting(false); } }} disabled={deleting}>
+                              {deleting ? "Deleting..." : "Remove all events"}
+                            </button>
+                          </div>
+                        ) : (
+                          <button className="flex h-12 w-full items-center justify-center rounded-[12px] border border-dashed border-border text-body leading-body font-medium text-text-secondary hover:bg-subtle-fill" onClick={() => fileInputRef.current?.click()} disabled={importing}>
+                            {importing ? "Importing..." : icsFile ? icsFile.name : "Choose .ics file"}
+                          </button>
+                        )}
+
+                        {authError && <p className="mt-2 text-caption leading-caption text-red-500">{authError}</p>}
+                        {importSuccess && <p className="mt-2 text-caption leading-caption font-medium" style={{ color: "#6F8F7A" }}>{importSuccess}</p>}
                       </div>
-                    )}
 
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept=".ics"
-                      className="hidden"
-                      onChange={async (e) => {
-                        const file = e.target.files?.[0];
-                        if (!file || !user) return;
-                        setIcsFile(file);
-                        setImporting(true);
-                        setAuthError("");
-                        setImportSuccess("");
-                        try {
-                          const content = await file.text();
-                          const parsed = parseIcsFile(content);
-                          if (parsed.length === 0) {
-                            setAuthError("No events found in the file.");
-                            return;
-                          }
-                          await importEventsToFirestore(user.uid, parsed);
-                          setUploadedFileName(file.name);
-                          setIcsFile(null);
-                          setImportSuccess(`Successfully imported ${parsed.length} event${parsed.length > 1 ? "s" : ""}!`);
-                        } catch (err: any) {
-                          console.error("ICS import failed:", err);
-                          setAuthError(`Import failed: ${err.message || err}`);
-                        } finally {
-                          setImporting(false);
-                          e.target.value = "";
-                        }
-                      }}
-                    />
-
-                    {authError && (
-                      <p className="mt-2 text-caption leading-caption text-red-500">{authError}</p>
-                    )}
-                    {importSuccess && (
-                      <p className="mt-2 text-caption leading-caption font-medium" style={{ color: "#6F8F7A" }}>{importSuccess}</p>
-                    )}
+                      <button className="h-12 w-full rounded-[12px] text-body leading-body font-medium text-red-500 hover:bg-red-50 transition-colors" onClick={() => signOut(auth)}>
+                        Log out
+                      </button>
+                    </div>
                   </div>
 
-                  <button
-                    className="h-12 w-full rounded-full border border-border text-secondary leading-secondary font-medium text-text-strong transition-colors hover:bg-subtle-fill"
-                    onClick={() => signOut(auth)}
-                  >
-                    Log out
-                  </button>
+                  {/* Desktop: settings layout with sidebar */}
+                  <div className="hidden lg:flex min-h-screen">
+                    {/* Settings sidebar */}
+                    <div className="w-[240px] shrink-0 border-r border-divider px-5 py-8">
+                      <div className="flex items-center gap-3 mb-6">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-accent/15 text-accent text-caption font-semibold">
+                          {(user?.displayName || "C")[0].toUpperCase()}
+                        </div>
+                        <div>
+                          <p className="text-small leading-small font-medium text-text-strong">{user?.displayName || "User"}</p>
+                          <p className="text-label leading-label text-text-tertiary">Settings</p>
+                        </div>
+                      </div>
+
+                      <div className="space-y-1">
+                        <p className="px-3 py-1.5 text-label leading-label font-medium text-text-tertiary uppercase tracking-wide">Personal</p>
+                        <button
+                          onClick={() => setSettingsTab("profile")}
+                          className={`flex w-full items-center gap-2.5 rounded-[8px] px-3 py-2 text-small leading-small transition-colors ${settingsTab === "profile" ? "bg-subtle-fill text-text-strong font-medium" : "text-text-secondary hover:bg-subtle-fill"}`}
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
+                          Profile
+                        </button>
+                      </div>
+
+                      <div className="mt-4 space-y-1">
+                        <p className="px-3 py-1.5 text-label leading-label font-medium text-text-tertiary uppercase tracking-wide">App Settings</p>
+                        <button
+                          onClick={() => setSettingsTab("calendars")}
+                          className={`flex w-full items-center gap-2.5 rounded-[8px] px-3 py-2 text-small leading-small transition-colors ${settingsTab === "calendars" ? "bg-subtle-fill text-text-strong font-medium" : "text-text-secondary hover:bg-subtle-fill"}`}
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M8 2V6M16 2V6M3 10H21M5 4H19C20.1046 4 21 4.89543 21 6V20C21 21.1046 20.1046 22 19 22H5C3.89543 22 3 21.1046 3 20V6C3 4.89543 3.89543 4 5 4Z" /></svg>
+                          Calendars
+                        </button>
+                        <button
+                          onClick={() => setSettingsTab("tasks")}
+                          className={`flex w-full items-center gap-2.5 rounded-[8px] px-3 py-2 text-small leading-small transition-colors ${settingsTab === "tasks" ? "bg-subtle-fill text-text-strong font-medium" : "text-text-secondary hover:bg-subtle-fill"}`}
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17L4 12" /></svg>
+                          Tasks
+                        </button>
+                        <button
+                          onClick={() => setSettingsTab("appearance")}
+                          className={`flex w-full items-center gap-2.5 rounded-[8px] px-3 py-2 text-small leading-small transition-colors ${settingsTab === "appearance" ? "bg-subtle-fill text-text-strong font-medium" : "text-text-secondary hover:bg-subtle-fill"}`}
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3" /><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" /></svg>
+                          Appearance
+                        </button>
+                      </div>
+
+                      <div className="mt-8 border-t border-divider pt-4">
+                        <button
+                          onClick={() => signOut(auth)}
+                          className="flex w-full items-center gap-2.5 px-3 py-2 text-small leading-small text-red-500 hover:bg-red-50 rounded-[8px] transition-colors"
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" /></svg>
+                          Log out
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Settings content area */}
+                    <div className="flex-1 px-10 py-8 max-w-[640px]">
+                      {settingsTab === "profile" && (
+                        <div>
+                          <h2 className="text-title leading-title font-medium text-text-strong">Profile</h2>
+                          <p className="mt-1 text-small leading-small text-text-secondary">Manage your account details</p>
+                          <div className="mt-6 border-t border-divider pt-6 space-y-5">
+                            <div>
+                              <p className="text-small leading-small font-medium text-text-strong">Email</p>
+                              <p className="mt-1 text-body leading-body text-text-secondary">carmah@stanford.edu</p>
+                            </div>
+                            <div>
+                              <p className="text-small leading-small font-medium text-text-strong">Name</p>
+                              <p className="mt-1 text-body leading-body text-text-secondary">{user?.displayName || "Not set"}</p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {settingsTab === "calendars" && (
+                        <div>
+                          <h2 className="text-title leading-title font-medium text-text-strong">Calendars</h2>
+                          <p className="mt-1 text-small leading-small text-text-secondary">Manage your calendar imports</p>
+                          <div className="mt-6 border-t border-divider pt-6">
+                            {uploadedFileName ? (
+                              <div className="space-y-4">
+                                <div className="flex items-center gap-3 rounded-[12px] bg-background px-4 py-3">
+                                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6F8F7A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                    <polyline points="14 2 14 8 20 8" />
+                                  </svg>
+                                  <span className="flex-1 truncate text-body leading-body font-medium text-text-strong">{uploadedFileName}</span>
+                                  <span className="text-caption leading-caption font-medium" style={{ color: "#6F8F7A" }}>{events.length} event{events.length !== 1 ? "s" : ""}</span>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                  <button className="rounded-[12px] bg-subtle-fill px-4 py-2.5 text-small leading-small font-medium text-text-secondary hover:bg-gray-200 transition-colors" onClick={() => fileInputRef.current?.click()} disabled={importing}>
+                                    {importing ? "Importing..." : "Add another .ics"}
+                                  </button>
+                                  <button className="rounded-[12px] px-4 py-2.5 text-small leading-small font-medium text-red-500 hover:bg-red-50 transition-colors" onClick={async () => { if (!user || deleting) return; setDeleting(true); setAuthError(""); setImportSuccess(""); try { const eventsCol = collection(db, "users", user.uid, "events"); const snapshot = await getDocs(eventsCol); for (let i = 0; i < snapshot.docs.length; i += 500) { const batch = writeBatch(db); snapshot.docs.slice(i, i + 500).forEach((d) => batch.delete(d.ref)); await batch.commit(); } setUploadedFileName(""); setImportSuccess(`Deleted ${snapshot.docs.length} events.`); } catch (err: any) { setAuthError(`Delete failed: ${err.message || err}`); } finally { setDeleting(false); } }} disabled={deleting}>
+                                    {deleting ? "Deleting..." : "Remove all"}
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div>
+                                <p className="text-small leading-small text-text-secondary mb-3">No calendar imported yet. Upload a .ics file to get started.</p>
+                                <button className="rounded-[12px] bg-accent px-4 py-2.5 text-small leading-small font-medium text-white hover:bg-accent-dark transition-colors" onClick={() => fileInputRef.current?.click()} disabled={importing}>
+                                  {importing ? "Importing..." : "Import .ics file"}
+                                </button>
+                              </div>
+                            )}
+                            {authError && <p className="mt-3 text-caption leading-caption text-red-500">{authError}</p>}
+                            {importSuccess && <p className="mt-3 text-caption leading-caption font-medium" style={{ color: "#6F8F7A" }}>{importSuccess}</p>}
+                          </div>
+                        </div>
+                      )}
+
+                      {settingsTab === "tasks" && (
+                        <div>
+                          <h2 className="text-title leading-title font-medium text-text-strong">Tasks</h2>
+                          <p className="mt-1 text-small leading-small text-text-secondary">Manage your task preferences</p>
+                          <div className="mt-6 border-t border-divider pt-6">
+                            <p className="text-small leading-small text-text-secondary">Additional task settings will be available in future updates.</p>
+                          </div>
+                        </div>
+                      )}
+
+                      {settingsTab === "appearance" && (
+                        <div>
+                          <h2 className="text-title leading-title font-medium text-text-strong">Appearance</h2>
+                          <p className="mt-1 text-small leading-small text-text-secondary">Customize how Kali looks</p>
+                          <div className="mt-6 border-t border-divider pt-6">
+                            <p className="text-small leading-small text-text-secondary">Appearance settings will be available in future updates.</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".ics"
+                    className="hidden"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file || !user) return;
+                      setIcsFile(file);
+                      setImporting(true);
+                      setAuthError("");
+                      setImportSuccess("");
+                      try {
+                        const content = await file.text();
+                        const parsed = parseIcsFile(content);
+                        if (parsed.length === 0) {
+                          setAuthError("No events found in the file.");
+                          return;
+                        }
+                        await importEventsToFirestore(user.uid, parsed);
+                        setUploadedFileName(file.name);
+                        setIcsFile(null);
+                        setImportSuccess(`Successfully imported ${parsed.length} event${parsed.length > 1 ? "s" : ""}!`);
+                      } catch (err: any) {
+                        console.error("ICS import failed:", err);
+                        setAuthError(`Import failed: ${err.message || err}`);
+                      } finally {
+                        setImporting(false);
+                        e.target.value = "";
+                      }
+                    }}
+                  />
                 </div>
-              </div>
-            )}
-          </motion.div>
-        </AnimatePresence>
+              )}
+            </motion.div>
+          </AnimatePresence>
+        </div>
+
+        {/* Mobile bottom nav - hidden on desktop */}
+        {activeTab !== "calendar" && (
+          <div className="lg:hidden">
+            <BottomNav items={navItems} onItemPress={handleNavItemPress} />
+          </div>
+        )}
+
+        {/* Chat popover modal */}
+        <Chat open={chatOpen} onClose={() => setChatOpen(false)} userId={user.uid} />
       </div>
-
-      {activeTab !== "calendar" && (
-        <BottomNav items={navItems} onItemPress={handleNavItemPress} />
-      )}
-
-      {/* Chat popover modal */}
-      <Chat open={chatOpen} onClose={() => setChatOpen(false)} userId={user.uid} />
     </div>
   );
 }
