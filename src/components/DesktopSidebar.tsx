@@ -1,21 +1,52 @@
 import { cn } from "@/lib/utils";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  Settings,
+  CircleArrowUp,
+  Download,
+  SunMedium,
+  Languages,
+  HelpCircle,
+  LogOut,
+  ChevronRight,
+} from "lucide-react";
 
 interface DesktopSidebarProps {
   activeTab: string;
   onNavPress: (id: string) => void;
   userEmail?: string;
   onAddPress?: () => void;
+  onSignOut?: () => void;
 }
 
 const MIN_WIDTH = 200;
 const MAX_WIDTH = 480;
 const DEFAULT_WIDTH = 260;
 
-export function DesktopSidebar({ activeTab, onNavPress, userEmail }: DesktopSidebarProps) {
+export function DesktopSidebar({ activeTab, onNavPress, userEmail, onSignOut }: DesktopSidebarProps) {
   const [width, setWidth] = useState(DEFAULT_WIDTH);
   const [dragging, setDragging] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const isDragging = useRef(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onDown = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMenuOpen(false);
+    };
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [menuOpen]);
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
@@ -48,13 +79,12 @@ export function DesktopSidebar({ activeTab, onNavPress, userEmail }: DesktopSide
     { id: "home", label: "Home" },
     { id: "tasks", label: "Tasks" },
     { id: "chat", label: "Assistant" },
-    { id: "profile", label: "Settings" },
   ];
 
   return (
     <aside
       className={cn(
-        "hidden lg:flex lg:shrink-0 lg:flex-col lg:border-r lg:bg-surface lg:h-screen lg:sticky lg:top-0 relative transition-colors",
+        "hidden lg:flex lg:shrink-0 lg:flex-col lg:border-r lg:bg-surface-alt lg:h-screen lg:sticky lg:top-0 relative transition-colors",
         dragging ? "border-accent bg-accent/[0.03]" : "border-divider"
       )}
       style={{ width }}
@@ -88,9 +118,16 @@ export function DesktopSidebar({ activeTab, onNavPress, userEmail }: DesktopSide
       </nav>
 
       {/* User info at bottom */}
-      <div className="mt-auto border-t border-divider px-4 py-4">
-        <div className="flex items-center gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-accent/15 text-xs font-semibold text-accent">
+      <div ref={menuRef} className="relative mt-auto border-t border-divider px-3 py-3">
+        <button
+          type="button"
+          onClick={() => setMenuOpen((v) => !v)}
+          className={cn(
+            "flex w-full items-center gap-3 rounded-[10px] px-2 py-2 text-left transition-colors",
+            menuOpen ? "bg-subtle-fill" : "hover:bg-subtle-fill"
+          )}
+        >
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent/15 text-xs font-semibold text-accent">
             {userEmail?.charAt(0).toUpperCase() || "U"}
           </div>
           <div className="min-w-0 flex-1">
@@ -101,7 +138,70 @@ export function DesktopSidebar({ activeTab, onNavPress, userEmail }: DesktopSide
               {userEmail || ""}
             </p>
           </div>
-        </div>
+        </button>
+
+        {menuOpen && (
+          <div
+            role="menu"
+            className="absolute bottom-full left-3 right-3 mb-2 overflow-hidden rounded-[16px] bg-surface shadow-floating animate-fade-in"
+          >
+            {/* Header */}
+            <div className="flex items-center gap-3 px-4 pt-4 pb-3">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent/15 text-small font-semibold text-accent">
+                {userEmail?.charAt(0).toUpperCase() || "U"}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-body leading-body font-medium text-text-strong">
+                  {userEmail?.split("@")[0] || "User"}
+                </p>
+                <p className="truncate text-caption leading-caption text-text-tertiary">
+                  {userEmail || ""}
+                </p>
+              </div>
+            </div>
+
+            <MenuDivider />
+
+            <MenuItem icon={<Settings size={18} />} label="All settings" trailing={<KbdHint>⇧⌘,</KbdHint>} onClick={() => setMenuOpen(false)} />
+            <MenuItem icon={<CircleArrowUp size={18} />} label="Upgrade plan" onClick={() => setMenuOpen(false)} />
+            <MenuItem icon={<Download size={18} />} label="Install apps" onClick={() => setMenuOpen(false)} />
+
+            <MenuDivider />
+
+            <MenuItem
+              icon={<SunMedium size={18} />}
+              label="Appearance"
+              caption="System (Light)"
+              trailing={<ChevronRight size={16} className="text-text-tertiary" />}
+              onClick={() => setMenuOpen(false)}
+            />
+            <MenuItem
+              icon={<Languages size={18} />}
+              label="Language"
+              caption="Default"
+              trailing={<ChevronRight size={16} className="text-text-tertiary" />}
+              onClick={() => setMenuOpen(false)}
+            />
+            <MenuItem
+              icon={<HelpCircle size={18} />}
+              label="Help"
+              trailing={<ChevronRight size={16} className="text-text-tertiary" />}
+              onClick={() => setMenuOpen(false)}
+            />
+
+            <MenuDivider />
+
+            <MenuItem
+              icon={<LogOut size={18} />}
+              label="Sign out"
+              onClick={() => {
+                setMenuOpen(false);
+                onSignOut?.();
+              }}
+            />
+            <div className="h-2" />
+          </div>
+        )}
       </div>
 
       {/* Drag handle (invisible hit area over the border) */}
@@ -187,5 +287,57 @@ function ProfileIcon() {
       {/* Head circle — nods on hover */}
       <circle className="head" cx="12" cy="7" r="4" />
     </svg>
+  );
+}
+
+/* ── Profile menu primitives ── */
+
+function MenuItem({
+  icon,
+  label,
+  caption,
+  trailing,
+  onClick,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  caption?: string;
+  trailing?: React.ReactNode;
+  onClick?: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      role="menuitem"
+      onClick={onClick}
+      className="flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors hover:bg-subtle-fill"
+    >
+      <span className="flex h-5 w-5 shrink-0 items-center justify-center text-text-strong">
+        {icon}
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-body leading-body font-normal text-text-strong">
+          {label}
+        </span>
+        {caption && (
+          <span className="block truncate text-caption leading-caption text-text-tertiary">
+            {caption}
+          </span>
+        )}
+      </span>
+      {trailing && <span className="shrink-0">{trailing}</span>}
+    </button>
+  );
+}
+
+function MenuDivider() {
+  return <div className="mx-4 h-px bg-divider" />;
+}
+
+function KbdHint({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="text-caption leading-caption text-text-tertiary">
+      {children}
+    </span>
   );
 }

@@ -526,8 +526,8 @@ export default function AssistantPage({ userId, events }: AssistantPageProps) {
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   placeholder="Describe your project, assignment, or goal..."
-                  rows={3}
-                  className="w-full resize-none rounded-[10px] border border-divider bg-surface px-4 pt-4 pb-14 pr-28 text-body leading-body text-text-strong placeholder:text-text-tertiary outline-none focus:border-accent/40 transition-colors"
+                  rows={2}
+                  className="w-full resize-none rounded-[10px] border border-divider bg-surface px-4 pt-3 pb-12 pr-28 text-body leading-body text-text-strong placeholder:text-text-tertiary outline-none focus:border-accent/40 transition-colors"
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && !e.shiftKey) {
                       e.preventDefault();
@@ -749,69 +749,83 @@ export default function AssistantPage({ userId, events }: AssistantPageProps) {
       {!isRecording && messages.length > 0 && (
         <div className="sticky bottom-0 px-4 pb-10 pt-5 lg:max-w-[640px] lg:mx-auto lg:w-full bg-background">
           {error && <p className="mb-2 text-small leading-small text-red-500">{error}</p>}
+
+          {/* Staged file indicator (above the bar) */}
+          {stagedFile && (
+            <div className="mb-2 flex items-center gap-2 rounded-full bg-subtle-fill px-3 py-1.5 text-caption leading-caption text-text-secondary w-fit">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <polyline points="14 2 14 8 20 8" />
+              </svg>
+              <span className="max-w-[200px] truncate">{stagedFile.name}</span>
+              <button type="button" onClick={() => setStagedFile(null)} className="shrink-0 text-text-tertiary hover:text-text-strong">
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M9 3L3 9M3 3L9 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
+              </button>
+            </div>
+          )}
+
           <form
             onSubmit={(e) => {
               e.preventDefault();
               sendMessage(input);
             }}
-            className="relative"
           >
-            <input
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Describe your project, assignment, or goal..."
-              className="w-full rounded-[10px] border border-divider bg-surface px-4 py-3 pr-28 text-body leading-body text-text-strong placeholder:text-text-tertiary outline-none focus:border-accent/40 transition-colors"
-              disabled={sending}
-            />
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-subtle-fill text-text-secondary transition-colors hover:bg-gray-200"
+            <div className="rounded-[20px] border border-divider bg-surface px-4 pt-3 pb-2.5 shadow-flat transition-colors focus-within:border-accent/40">
+              <textarea
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder="Ask a follow-up"
+                rows={1}
                 disabled={sending}
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
-                </svg>
-              </button>
-              <button
-                type="button"
-                onClick={startRecording}
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-subtle-fill text-text-secondary transition-colors hover:bg-gray-200"
-                disabled={sending}
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
-                  <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
-                  <line x1="12" y1="19" x2="12" y2="23" />
-                  <line x1="8" y1="23" x2="16" y2="23" />
-                </svg>
-              </button>
-              <button
-                type="submit"
-                disabled={!input.trim() || sending}
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-accent text-white transition-colors hover:bg-accent-dark disabled:opacity-30"
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12 19V5M5 12l7-7 7 7" />
-                </svg>
-              </button>
-            </div>
-
-            {/* Staged file indicator */}
-            {stagedFile && (
-              <div className="mt-2 flex items-center gap-2 text-caption leading-caption text-text-secondary">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                  <polyline points="14 2 14 8 20 8" />
-                </svg>
-                <span className="flex-1 truncate">{stagedFile.name}</span>
-                <button type="button" onClick={() => setStagedFile(null)} className="shrink-0 text-text-tertiary hover:text-text-strong">
-                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M9 3L3 9M3 3L9 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    if (input.trim() && !sending) sendMessage(input);
+                  }
+                }}
+                className="block w-full resize-none bg-transparent text-body leading-body text-text-strong placeholder:text-text-tertiary outline-none"
+              />
+              <div className="mt-2 flex items-center justify-between">
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex h-9 w-9 items-center justify-center rounded-full text-text-secondary transition-colors hover:bg-subtle-fill disabled:opacity-40"
+                  disabled={sending}
+                  aria-label="Attach file"
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+                  </svg>
                 </button>
+
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={startRecording}
+                    className="flex h-9 w-9 items-center justify-center rounded-full text-text-secondary transition-colors hover:bg-subtle-fill disabled:opacity-40"
+                    disabled={sending}
+                    aria-label="Record voice"
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+                      <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                      <line x1="12" y1="19" x2="12" y2="23" />
+                      <line x1="8" y1="23" x2="16" y2="23" />
+                    </svg>
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={!input.trim() || sending}
+                    aria-label="Send"
+                    className="ml-1 flex h-9 w-9 items-center justify-center rounded-full bg-accent text-white transition-colors hover:bg-accent-dark disabled:opacity-30"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 19V5M5 12l7-7 7 7" />
+                    </svg>
+                  </button>
+                </div>
               </div>
-            )}
+            </div>
           </form>
         </div>
       )}
