@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { useCallback, useRef, useState } from "react";
 
 interface DesktopSidebarProps {
   activeTab: string;
@@ -7,7 +8,42 @@ interface DesktopSidebarProps {
   onAddPress?: () => void;
 }
 
+const MIN_WIDTH = 200;
+const MAX_WIDTH = 480;
+const DEFAULT_WIDTH = 260;
+
 export function DesktopSidebar({ activeTab, onNavPress, userEmail }: DesktopSidebarProps) {
+  const [width, setWidth] = useState(DEFAULT_WIDTH);
+  const [dragging, setDragging] = useState(false);
+  const isDragging = useRef(false);
+
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    isDragging.current = true;
+    setDragging(true);
+    const startX = e.clientX;
+    const startWidth = width;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isDragging.current) return;
+      const newWidth = Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, startWidth + (e.clientX - startX)));
+      setWidth(newWidth);
+    };
+
+    const handleMouseUp = () => {
+      isDragging.current = false;
+      setDragging(false);
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    };
+
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
+  }, [width]);
   const items = [
     { id: "home", label: "Home" },
     { id: "tasks", label: "Tasks" },
@@ -16,7 +52,13 @@ export function DesktopSidebar({ activeTab, onNavPress, userEmail }: DesktopSide
   ];
 
   return (
-    <aside className="hidden lg:flex lg:w-[260px] lg:shrink-0 lg:flex-col lg:border-r lg:border-divider lg:bg-surface lg:h-screen lg:sticky lg:top-0">
+    <aside
+      className={cn(
+        "hidden lg:flex lg:shrink-0 lg:flex-col lg:border-r lg:bg-surface lg:h-screen lg:sticky lg:top-0 relative transition-colors",
+        dragging ? "border-accent bg-accent/[0.03]" : "border-divider"
+      )}
+      style={{ width }}
+    >
       {/* Navigation */}
       <nav className="flex flex-1 flex-col gap-1 px-3 pt-6">
         {items.map((item) => {
@@ -61,6 +103,12 @@ export function DesktopSidebar({ activeTab, onNavPress, userEmail }: DesktopSide
           </div>
         </div>
       </div>
+
+      {/* Drag handle (invisible hit area over the border) */}
+      <div
+        onMouseDown={handleMouseDown}
+        className="absolute top-0 -right-[3px] h-full w-[7px] cursor-col-resize z-10"
+      />
 
       <style>{`
         /* Home: gentle bounce */

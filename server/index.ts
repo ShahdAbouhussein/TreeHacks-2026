@@ -430,71 +430,132 @@ app.post("/api/parse-project", async (req: Request, res: Response) => {
   try {
     const today = new Date().toLocaleDateString("en-CA");
 
+    // Fetch upcoming events for context (limit to next 7 days to keep prompt small)
+    let existingEvents: { id: string; title: string; start: string; end: string }[] = [];
+    try {
+      const now = new Date();
+      const weekFromNow = new Date(now);
+      weekFromNow.setDate(weekFromNow.getDate() + 7);
+      const eventsSnap = await adminDb
+        .collection("users").doc(userId).collection("events")
+        .where("start", ">=", Timestamp.fromDate(now))
+        .where("start", "<=", Timestamp.fromDate(weekFromNow))
+        .orderBy("start")
+        .limit(30)
+        .get();
+      existingEvents = eventsSnap.docs.map((doc) => {
+        const d = doc.data();
+        const start = d.start?.toDate ? d.start.toDate() : new Date(d.start);
+        const end = d.end?.toDate ? d.end.toDate() : new Date(d.end);
+        return { id: doc.id, title: d.title, start: start.toISOString(), end: end.toISOString() };
+      });
+    } catch (e: any) {
+      console.error("Failed to fetch events for context:", e.message);
+    }
+
     const completion = await openai.chat.completions.create({
       model: "gpt-4o",
       response_format: { type: "json_object" },
       messages: [
         {
           role: "system",
-          content: `You are an expert project planner. Carefully extract and infer project details from the user's description.
+          content: `You are an expert project planner and calendar assistant. Carefully analyze the user's message and respond with the appropriate action.
 
-Return JSON with one of two formats:
+Return JSON in ONE of three formats:
 
-If the user's message describes an actual project, assignment, or task:
-{ "valid": true, "title": string, "description": string, "deadline": "YYYY-MM-DD", "estimatedHours": number, "subComponents": string[] }
+FORMAT 1 — Calendar event action (create, update, or delete an event):
+{ "type": "event_action", "action": "create" | "update" | "delete", "event": { "title": string, "start": "ISO 8601 datetime", "end": "ISO 8601 datetime", "description": string }, "eventId": string (only for update/delete — match against existing events), "reply": string (friendly confirmation message) }
 
-If the user's message is a greeting, casual chat, question, or does NOT describe any project/assignment/task:
-{ "valid": false, "reply": "<your friendly, natural response — greet them back and ask what project or assignment they'd like to plan>" }
+FORMAT 2 — Project/assignment to plan:
+{ "type": "project", "title": string, "description": string, "deadline": "YYYY-MM-DD", "estimatedHours": number, "subComponents": string[] }
 
-Guidelines for valid projects:
-- **title**: A concise, clear project name. If the user gives a course name + assignment (e.g. "CS109 Problem Set 3"), use that.
-- **description**: A 1-2 sentence summary of what the project involves. Infer from context if not explicit.
-- **deadline**: Parse any date mention carefully. Handle relative dates ("next Friday", "in 3 days", "March 20th", "due tomorrow", "end of week"). If the user says a day of the week, calculate the exact YYYY-MM-DD. Default to 2 weeks from today if nothing mentioned.
-- **estimatedHours**: Be VERY conservative. Most assignments take 2-6 hours. A section/problem set: 1.5-4h. A reflection: 2-3h. A short homework: 1-3h. A research paper: 10-20h. A coding project: 6-15h. DO NOT overestimate.
-- **subComponents**: Break into 3-6 concrete steps. Keep it focused — don't over-decompose simple tasks.
+FORMAT 3 — General chat:
+{ "type": "chat", "reply": string }
 
-Today is ${today}. The current day of the week is ${new Date().toLocaleDateString("en-US", { weekday: "long" })}.`,
+CALENDAR EVENT GUIDELINES:
+- If the user asks to create/add/schedule an event, meeting, appointment, class, etc., use FORMAT 1 with action "create".
+- If the user asks to move, reschedule, change, or update an event, use FORMAT 1 with action "update". Match the event title against the existing events list to find the eventId.
+- If the user asks to cancel, remove, or delete an event, use FORMAT 1 with action "delete". Match against existing events to find the eventId.
+- Parse dates/times carefully. Use ISO 8601 format. If no end time specified, default to 1 hour after start.
+- For "reply", write a short, friendly confirmation of what you did (e.g., "Done! I've added 'Team Standup' tomorrow at 10am.").
+
+PROJECT GUIDELINES:
+- **title**: A concise, clear project name.
+- **description**: A 1-2 sentence summary.
+- **deadline**: Parse date mentions. Default to 2 weeks from today if none mentioned.
+- **estimatedHours**: Be conservative. Problem set: 1.5-4h. Reflection: 2-3h. Research paper: 10-20h. Coding project: 6-15h.
+- **subComponents**: 3-6 concrete steps.
+
+GENERAL CHAT:
+- If the user greets, asks questions, or says something that isn't a project or calendar action, respond naturally.
+
+Today is ${today}. The current day of the week is ${new Date().toLocaleDateString("en-US", { weekday: "long" })}.
+Current time: ${new Date().toLocaleTimeString("en-US", { hour12: false })}.
+
+Existing calendar events:
+${JSON.stringify(existingEvents, null, 2)}`,
         },
         { role: "user", content: text },
       ],
     });
 
     const parsed = JSON.parse(completion.choices[0].message.content || "{}");
+    console.log("🤖 GPT response:", JSON.stringify(parsed, null, 2));
 
-    // If the input wasn't a valid project description, return a chat reply instead
-    if (parsed.valid === false) {
+    // Handle event actions — return pending event for frontend confirmation
+    if (parsed.type === "event_action") {
+      return res.json({
+        eventAction: {
+          action: parsed.action,
+          event: parsed.event,
+          eventId: parsed.eventId || null,
+          reply: parsed.reply,
+        },
+      });
+    }
+
+    // Handle chat reply
+    if (parsed.type === "chat") {
       return res.json({
         chatReply: parsed.reply || "Tell me about a project or assignment you'd like to plan!",
       });
     }
 
-    const projectData = {
-      title: parsed.title,
-      description: parsed.description,
-      deadline: parsed.deadline,
-      estimatedHours: parsed.estimatedHours,
-      status: "active",
-      createdAt: Timestamp.now(),
-    };
-
-    const docRef = await adminDb
-      .collection("users")
-      .doc(userId)
-      .collection("projects")
-      .add(projectData);
-
-    res.json({
-      projectId: docRef.id,
-      project: {
+    // Handle project (legacy "valid" format or new "type: project" format)
+    if (parsed.type === "project" || parsed.valid === true) {
+      const projectData = {
         title: parsed.title,
         description: parsed.description,
         deadline: parsed.deadline,
         estimatedHours: parsed.estimatedHours,
-        subComponents: parsed.subComponents,
-      },
+        status: "active",
+        createdAt: Timestamp.now(),
+      };
+
+      const docRef = await adminDb
+        .collection("users")
+        .doc(userId)
+        .collection("projects")
+        .add(projectData);
+
+      return res.json({
+        projectId: docRef.id,
+        project: {
+          title: parsed.title,
+          description: parsed.description,
+          deadline: parsed.deadline,
+          estimatedHours: parsed.estimatedHours,
+          subComponents: parsed.subComponents,
+        },
+      });
+    }
+
+    // Fallback
+    return res.json({
+      chatReply: parsed.reply || "Tell me about a project or assignment you'd like to plan!",
     });
   } catch (error: any) {
-    console.error("Parse project error:", error.message || error);
+    console.error("Parse project error:", error.stack || error.message || error);
     res.status(500).json({ error: "Failed to parse project", detail: error.message });
   }
 });

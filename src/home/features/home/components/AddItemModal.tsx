@@ -467,15 +467,11 @@ export function AddItemModal({ userId, onClose, editEvent, anchorPosition, allEv
   const handleDeleteRef = useRef(handleDelete);
   handleDeleteRef.current = handleDelete;
 
-  // Keyboard shortcut: ESC to delete (edit) or discard (new), Enter to save
+  // Keyboard shortcut: ESC to close, Enter to save
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        if (isEdit) {
-          handleDeleteRef.current();
-        } else {
-          onClose();
-        }
+        onClose();
       }
       if (e.key === "Enter" && !e.shiftKey && canSave && !saving) { handleSaveRef.current(); }
     };
@@ -519,7 +515,7 @@ export function AddItemModal({ userId, onClose, editEvent, anchorPosition, allEv
   const desktopPopover = (
     <motion.div
       ref={popoverRef}
-      className="fixed z-50 hidden lg:block w-[460px] rounded-[14px] bg-white border border-divider shadow-lg overflow-visible"
+      className="fixed z-[999] hidden lg:block w-[460px] rounded-[14px] bg-white border-2 border-accent shadow-lg overflow-visible"
       style={
         anchorPosition
           ? { top: Math.min(anchorPosition.top, window.innerHeight - 500), left: Math.max(8, anchorPosition.left - 470) }
@@ -979,7 +975,7 @@ export function AddItemModal({ userId, onClose, editEvent, anchorPosition, allEv
     </motion.div>
   );
 
-  const isDesktop = typeof window !== "undefined" && window.innerWidth >= 1024;
+  const isDesktop = typeof window !== "undefined" && window.innerWidth >= 768;
 
   return (
     <AnimatePresence>

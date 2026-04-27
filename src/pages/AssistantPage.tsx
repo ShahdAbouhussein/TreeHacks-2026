@@ -40,27 +40,37 @@ interface AssistantPageProps {
   events: CalendarEvent[];
 }
 
-/* ── Kali logo loading indicator ── */
+/* ── Three-shape bouncing loading indicator ── */
 function KaliThinking() {
+  const shapes = [
+    { width: 10, height: 9, viewBox: "0 0 29 25", path: "M21.6333 0C22.9681 0.104094 24.0386 0.83307 24.7934 1.91075C25.5685 3.00821 25.8575 4.36986 25.5931 5.68214C25.0461 8.54764 21.8167 10.5302 19.1928 11.2148C18.8591 11.3019 18.3249 11.3661 18.0594 11.541L18.1543 11.6973C20.7611 13.1106 24.5205 10.6652 26.9663 10.1784C27.315 10.1177 28.0975 10.1924 28.3406 10.5011C29.7512 12.2944 28.6402 15.3338 27.4194 16.7284C26.3351 17.9687 24.7913 18.7254 23.1345 18.8276C19.1256 19.1096 17.183 16.9782 14.4873 14.6596C15.7129 17.401 20.4082 21.2419 16.6316 23.7253C14.9389 24.8355 12.8714 25.2428 10.8767 24.8591C6.54646 22.8821 9.96539 16.6931 10.9677 13.5786C10.3636 13.9381 9.87413 14.2608 9.33474 14.7033C7.65519 16.1355 5.08867 19.6262 2.72963 17.4132C-3.14951 11.8983 1.42686 9.32598 7.41625 9.32556C7.87663 9.32556 9.50469 8.97875 9.29871 8.34703C8.6172 6.19115 7.30356 4.37923 8.69599 2.17462C10.4063 -0.533312 13.8269 1.62773 15.0735 3.62752C15.549 4.39038 15.577 6.47522 16.1568 6.87086C17.8846 6.56595 18.6554 0.803285 21.6333 0Z" },
+    { width: 10, height: 10, viewBox: "0 0 27 27", path: "M11.815 0.0297849C13.2359 -0.199364 14.3423 0.934247 15.1195 2.03785C16.3668 3.80701 17.344 6.3231 16.7606 8.51156C16.5076 9.45774 16.0544 10.5454 15.9157 11.4819L16.0417 11.6253C17.3228 11.5442 19.1927 5.95332 22.6009 4.80812C23.5104 4.50258 24.5417 4.46846 25.4088 4.92632C26.1203 5.30531 26.6519 5.96134 26.8837 6.7463C27.212 7.86799 26.7948 9.14495 26.2601 10.1377C24.4379 13.5264 20.8137 13.8099 17.4668 14.7707C19.4425 16.1547 22.5014 17.2405 23.8238 19.4852C24.3183 20.3074 24.4623 21.3005 24.2241 22.2344C23.9339 23.4019 23.1303 24.5693 22.0916 25.152C19.0021 26.8863 16.7119 23.4432 15.4647 21.0762C15.1227 20.2496 14.1094 17.2671 13.1861 17.3038C12.3762 18.7182 16.0269 24.0713 14.1867 25.9821C12.7626 27.4622 10.6514 27.2097 9.21354 25.9852C7.41676 24.4556 7.35429 21.5844 8.1918 19.5414C8.47661 18.8162 9.66034 17.1854 9.60634 16.5763C8.6259 15.6869 6.57502 16.8726 5.42729 16.555C2.95183 15.87 -0.672421 13.4398 0.10791 10.3744C1.48328 4.97215 7.08641 9.86511 9.75034 11.0297C9.97268 11.1093 10.2395 11.1008 10.4227 10.9336C11.5937 9.86619 9.45494 7.8577 9.14577 6.52777C8.58461 4.11374 9.79798 1.25972 11.815 0.0297849Z" },
+    { width: 9, height: 11, viewBox: "0 0 28 34", path: "M13.2534 0.0280737L13.4964 0.0115122C17.0425 -0.214914 17.2828 2.94055 17.4111 5.78743C17.5424 8.70207 17.1174 11.6148 17.228 14.5408C19.1623 12.3694 20.7288 11.3604 23.7085 12.3712C26.3776 13.2767 30.6405 17.7382 25.7919 19.164C23.0588 19.9676 19.5004 19.521 16.8845 20.7304C17.5828 22.361 19.635 23.7475 20.9546 25.0436C23.4951 27.5389 23.6388 30.7416 21.3609 33.4725C21.1405 33.7365 20.4209 34.0813 20.0942 33.9828C16.4112 32.8725 14.5636 26.8003 12.2508 24.0729C12.0739 26.9197 12.8292 32.9786 9.36573 33.8672C5.48742 33.955 3.82603 30.6611 4.26529 27.0947C4.61993 24.2151 5.84418 22.4189 7.63423 20.2431C5.33207 20.4274 3.27887 21.9047 1.13332 21.6703C0.815639 21.6355 0.428592 21.3064 0.277586 21.0155C-0.0128852 20.4563 -0.0795988 19.261 0.0973522 18.6795C0.918676 15.9803 5.59533 16.3371 7.70466 15.8426C7.95478 15.7841 8.50861 15.4812 8.73989 15.3538C6.61838 12.6818 1.33008 11.644 0.191494 8.70543C-0.131487 7.87214 -0.00155335 7.01438 0.352137 6.21528C0.787366 5.23198 1.69902 3.86617 2.71837 3.49265C3.37502 3.25205 4.20852 3.32164 4.86793 3.51884C9.18772 4.81094 9.72684 11.8737 11.0064 12.3758C11.1429 12.4292 11.1653 12.3871 11.2927 12.3364C12.163 10.2671 6.64878 1.29041 13.2534 0.0280737Z" },
+  ];
+
   return (
-    <div className="mb-3 mr-auto px-4 py-3">
-      <motion.svg
-        width="22"
-        height="17"
-        viewBox="0 0 49 39"
-        fill="none"
-        animate={{
-          opacity: [0.3, 1, 0.3],
-          y: [0, -2, 0],
-        }}
-        transition={{
-          duration: 1.8,
-          repeat: Infinity,
-          ease: "easeInOut",
-        }}
-      >
-        <path d={KALI_PATH} fill="#6F8F7A" />
-      </motion.svg>
+    <div className="mb-3 mr-auto flex items-end gap-2 px-4 py-3">
+      {shapes.map((s, i) => (
+        <motion.svg
+          key={i}
+          width={s.width}
+          height={s.height}
+          viewBox={s.viewBox}
+          fill="none"
+          animate={{
+            y: [0, -8, 0],
+            opacity: [0.4, 1, 0.4],
+          }}
+          transition={{
+            duration: 1,
+            repeat: Infinity,
+            ease: "easeInOut",
+            delay: i * 0.2,
+          }}
+        >
+          <path d={s.path} fill="#6F8F7A" />
+        </motion.svg>
+      ))}
     </div>
   );
 }
@@ -80,7 +90,6 @@ function StreamingText({ text, onComplete }: { text: string; onComplete: () => v
   }, [displayed, text.length]);
 
   const visible = text.slice(0, displayed);
-  const upcoming = text.slice(displayed, displayed + 3);
 
   return (
     <span>
@@ -90,9 +99,6 @@ function StreamingText({ text, onComplete }: { text: string; onComplete: () => v
         ) : (
           <span key={j}>{part}</span>
         )
-      )}
-      {displayed < text.length && (
-        <span className="text-text-tertiary" style={{ filter: "blur(2px)" }}>{upcoming}</span>
       )}
     </span>
   );
@@ -521,7 +527,7 @@ export default function AssistantPage({ userId, events }: AssistantPageProps) {
                   onChange={(e) => setInput(e.target.value)}
                   placeholder="Describe your project, assignment, or goal..."
                   rows={3}
-                  className="w-full resize-none rounded-[16px] border border-divider bg-surface px-4 pt-4 pb-14 pr-28 text-body leading-body text-text-strong placeholder:text-text-tertiary outline-none focus:border-accent/40 transition-colors"
+                  className="w-full resize-none rounded-[10px] border border-divider bg-surface px-4 pt-4 pb-14 pr-28 text-body leading-body text-text-strong placeholder:text-text-tertiary outline-none focus:border-accent/40 transition-colors"
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && !e.shiftKey) {
                       e.preventDefault();
@@ -567,16 +573,16 @@ export default function AssistantPage({ userId, events }: AssistantPageProps) {
 
               {/* Staged file indicator */}
               {stagedFile && (
-                <div className="mt-2 flex items-center gap-2 text-caption leading-caption text-text-secondary">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <div className="mt-2 inline-flex items-center gap-2 rounded-[8px] bg-accent/10 px-3 py-2">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6F8F7A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                     <polyline points="14 2 14 8 20 8" />
                   </svg>
-                  <span className="flex-1 truncate">{stagedFile.name}</span>
+                  <span className="text-caption leading-caption font-medium text-accent truncate max-w-[200px]">{stagedFile.name}</span>
                   <button
                     type="button"
                     onClick={() => setStagedFile(null)}
-                    className="shrink-0 text-text-tertiary hover:text-text-strong"
+                    className="shrink-0 text-accent/60 hover:text-accent"
                   >
                     <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M9 3L3 9M3 3L9 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
                   </button>
@@ -597,11 +603,12 @@ export default function AssistantPage({ userId, events }: AssistantPageProps) {
                 transition={{ duration: 0.2 }}
                 className="ml-auto max-w-[85%] mb-2"
               >
-                <div className="rounded-[14px] border border-divider bg-white p-3 shadow-subtle inline-flex items-center gap-3">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[8px] bg-red-50">
-                    <span className="text-label leading-label font-bold text-red-400">PDF</span>
-                  </div>
-                  <span className="text-small leading-small font-medium text-text-strong truncate max-w-[200px]">{msg.fileName}</span>
+                <div className="rounded-[10px] bg-accent/10 p-3 inline-flex flex-col items-center gap-2 min-w-[100px]">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#6F8F7A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                    <polyline points="14 2 14 8 20 8" />
+                  </svg>
+                  <span className="text-caption leading-caption font-medium text-accent truncate max-w-[180px]">{msg.fileName}</span>
                 </div>
               </motion.div>
             )}
@@ -612,7 +619,7 @@ export default function AssistantPage({ userId, events }: AssistantPageProps) {
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.2 }}
-              className={`max-w-[85%] rounded-[16px] px-4 py-3 text-body leading-body ${
+              className={`max-w-[85%] rounded-[10px] px-4 py-3 text-body leading-body ${
                 msg.role === "user"
                   ? "ml-auto bg-subtle-fill text-text-strong"
                   : "mr-auto text-text-strong"
@@ -754,7 +761,7 @@ export default function AssistantPage({ userId, events }: AssistantPageProps) {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Describe your project, assignment, or goal..."
-              className="w-full rounded-[16px] border border-divider bg-surface px-4 py-3 pr-28 text-body leading-body text-text-strong placeholder:text-text-tertiary outline-none focus:border-accent/40 transition-colors"
+              className="w-full rounded-[10px] border border-divider bg-surface px-4 py-3 pr-28 text-body leading-body text-text-strong placeholder:text-text-tertiary outline-none focus:border-accent/40 transition-colors"
               disabled={sending}
             />
             <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">

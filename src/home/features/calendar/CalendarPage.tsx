@@ -658,6 +658,7 @@ export default function CalendarPage({ onBack, events = [], userId, onNavPress }
 
       {editingEvent && userId && (
         <AddItemModal
+          key={`edit-${editingEvent.id}`}
           userId={userId}
           editEvent={editingEvent}
           allEvents={events}

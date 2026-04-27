@@ -56,9 +56,10 @@ interface AppProps {
   userId?: string;
   userName?: string;
   desktopAddTrigger?: number;
+  onAssistantOpen?: () => void;
 }
 
-function App({ onSeeAllTasks, onNavPress, events = [], userId, userName, desktopAddTrigger }: AppProps) {
+function App({ onSeeAllTasks, onNavPress, events = [], userId, userName, desktopAddTrigger, onAssistantOpen }: AppProps) {
   const [selectedDate, setSelectedDate] = useState(() => new Date());
   const [weekDirection, setWeekDirection] = useState(0);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -95,7 +96,9 @@ function App({ onSeeAllTasks, onNavPress, events = [], userId, userName, desktop
   }, []);
 
   const handleEventPress = useCallback((eventId: string, clickEvent?: React.MouseEvent) => {
+    console.log("🔥 Event pressed:", eventId);
     const found = events.find((e) => e.id === eventId);
+    console.log("🔥 Found event:", found, "userId:", userId);
     if (found) {
       setEditingEvent(found);
       if (clickEvent) {
@@ -124,42 +127,9 @@ function App({ onSeeAllTasks, onNavPress, events = [], userId, userName, desktop
     });
   }, []);
 
-  const handleAiPress = useCallback(async () => {
-    if (showSummary) {
-      setShowSummary(false);
-      return;
-    }
-    setShowSummary(true);
-    setSummaryLoading(true);
-    try {
-      const todayStart = new Date();
-      todayStart.setHours(0, 0, 0, 0);
-      const todayEnd = new Date();
-      todayEnd.setHours(23, 59, 59, 999);
-
-      const todayEvents = events
-        .filter((e) => e.start <= todayEnd && e.end >= todayStart)
-        .map((e) => ({ title: e.title, start: e.start.toISOString(), end: e.end.toISOString() }));
-
-      const todayTasks = firestoreTasks.map((t) => ({
-        title: t.title,
-        dueDate: t.dueDate,
-        category: t.category,
-      }));
-
-      const res = await fetch("/api/daily-summary", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tasks: todayTasks, events: todayEvents, userName }),
-      });
-      const data = await res.json();
-      setSummary(data.summary || "You have a clear day ahead!");
-    } catch {
-      setSummary("Couldn't load your summary right now. Try again later!");
-    } finally {
-      setSummaryLoading(false);
-    }
-  }, [showSummary, events, firestoreTasks, userName]);
+  const handleAiPress = useCallback(() => {
+    onAssistantOpen?.();
+  }, [onAssistantOpen]);
 
   const selectedEvents = useMemo(() => {
     const dayStart = new Date(selectedDate);
@@ -271,14 +241,14 @@ function App({ onSeeAllTasks, onNavPress, events = [], userId, userName, desktop
         onEventPress={handleEventPress}
         onDragCreate={handleDragCreate}
         allEvents={events}
-        showSummary={showSummary}
-        summary={summary}
-        summaryLoading={summaryLoading}
-        onCloseSummary={() => setShowSummary(false)}
+        showSummary={false}
+        summary=""
+        summaryLoading={false}
+        onCloseSummary={() => {}}
       />
       {(showAddModal || editingEvent) && userId && (
         <AddItemModal
-          key={dragCreateInfo ? `${dragCreateInfo.date}-${dragCreateInfo.startTime}-${dragCreateInfo.endTime}` : "default"}
+          key={editingEvent ? `edit-${editingEvent.id}` : dragCreateInfo ? `drag-${dragCreateInfo.date}-${dragCreateInfo.startTime}-${dragCreateInfo.endTime}` : "new"}
           userId={userId}
           editEvent={editingEvent ?? undefined}
           anchorPosition={eventAnchor ?? undefined}

@@ -29,3 +29,9 @@ dist-ssr
 server/.env
 .vercel
 push-variables.mjs
+
+# Credentials
+server/serviceAccountKey.json
+
+# Screenshots / scratch
+Screenshot*.png
