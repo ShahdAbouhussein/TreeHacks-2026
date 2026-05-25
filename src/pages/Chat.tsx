@@ -1,5 +1,6 @@
 import { useRef, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Calendar, CheckSquare } from "lucide-react";
 
 const API_BASE = "http://localhost:5001";
 
@@ -43,6 +44,7 @@ export default function Chat({ open, onClose, userId }: ChatProps) {
   const [waveformBars, setWaveformBars] = useState<number[]>(
     Array(28).fill(0.08)
   );
+  const [liveText, setLiveText] = useState("");
   const [isPlaying, setIsPlaying] = useState(false);
   const [, setIsPaused] = useState(false);
   const [parsedTasks, setParsedTasks] = useState<ParsedTask[]>([]);
@@ -69,6 +71,72 @@ export default function Chat({ open, onClose, userId }: ChatProps) {
   const audioElRef = useRef<HTMLAudioElement | null>(null);
   const transcriptRef = useRef(transcript);
   transcriptRef.current = transcript;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const recognitionRef = useRef<any>(null);
+  const barsRef = useRef<number[]>(Array(28).fill(0.06));
+
+  // Map FFT bins outward from the center so loud (low-freq) energy lands in the middle,
+  // but each bar reads a unique bin (no symmetric lock-step). Smoothed with an EMA.
+  const buildCenteredBars = (data: Uint8Array, count: number) => {
+    const usable = Math.floor(data.length * 0.6);
+    const binWidth = Math.max(1, Math.floor(usable / count));
+    const raw: number[] = new Array(count);
+    for (let i = 0; i < count; i++) {
+      let sum = 0;
+      for (let j = 0; j < binWidth; j++) sum += data[i * binWidth + j];
+      raw[i] = sum / binWidth / 255;
+    }
+    const center = Math.floor(count / 2);
+    const next: number[] = new Array(count).fill(0);
+    for (let bin = 0; bin < count; bin++) {
+      const offset = Math.ceil(bin / 2);
+      const sign = bin % 2 === 0 ? -1 : 1;
+      const pos = Math.max(0, Math.min(count - 1, center + sign * offset));
+      next[pos] = raw[bin];
+    }
+    const prev = barsRef.current;
+    const blended = next.map((v, i) => Math.max(0.06, (prev[i] ?? 0.06) * 0.55 + v * 0.45));
+    barsRef.current = blended;
+    return blended;
+  };
+
+  const startSpeechRecognition = () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SR) return;
+    const recog = new SR();
+    recog.continuous = true;
+    recog.interimResults = true;
+    recog.lang = "en-US";
+    let finalText = "";
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    recog.onresult = (e: any) => {
+      let interim = "";
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const t = e.results[i][0].transcript;
+        if (e.results[i].isFinal) finalText += t;
+        else interim += t;
+      }
+      setLiveText((finalText + interim).trim());
+    };
+    recog.onerror = () => {};
+    recog.onend = () => {
+      // SR auto-stops after silence; restart while we're still the active recognizer.
+      if (recognitionRef.current === recog) {
+        try { recog.start(); } catch { /* ignore */ }
+      }
+    };
+    try { recog.start(); } catch { /* ignore */ }
+    recognitionRef.current = recog;
+  };
+
+  const stopSpeechRecognition = () => {
+    if (recognitionRef.current) {
+      const r = recognitionRef.current;
+      recognitionRef.current = null;
+      try { r.stop(); } catch { /* ignore */ }
+    }
+  };
 
   // Auto-start recording when modal opens
   useEffect(() => {
@@ -86,6 +154,7 @@ export default function Chat({ open, onClose, userId }: ChatProps) {
       setChatInput("");
       setChatMessages([]);
       setChatSending(false);
+      setLiveText("");
       startRecording();
     } else {
       cleanup();
@@ -94,6 +163,7 @@ export default function Chat({ open, onClose, userId }: ChatProps) {
   }, [open]);
 
   const cleanup = () => {
+    stopSpeechRecognition();
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
     rafRef.current = null;
     if (
@@ -143,20 +213,13 @@ export default function Chat({ open, onClose, userId }: ChatProps) {
         if (analyserRef.current) {
           const data = new Uint8Array(analyserRef.current.frequencyBinCount);
           analyserRef.current.getByteFrequencyData(data);
-          const count = 28;
-          const usable = Math.floor(data.length * 0.75);
-          const binWidth = Math.floor(usable / count);
-          setWaveformBars(
-            Array.from({ length: count }, (_, i) => {
-              let sum = 0;
-              for (let j = 0; j < binWidth; j++) sum += data[i * binWidth + j];
-              return Math.max(0.06, sum / binWidth / 255);
-            })
-          );
+          setWaveformBars(buildCenteredBars(data, 28));
         }
         rafRef.current = requestAnimationFrame(tick);
       };
       rafRef.current = requestAnimationFrame(tick);
+
+      startSpeechRecognition();
     } catch {
       alert("Microphone access denied.");
       onClose();
@@ -169,6 +232,7 @@ export default function Chat({ open, onClose, userId }: ChatProps) {
       recorder.pause();
       setIsPaused(true);
       setState("paused");
+      stopSpeechRecognition();
       if (rafRef.current) {
         cancelAnimationFrame(rafRef.current);
         rafRef.current = null;
@@ -188,24 +252,18 @@ export default function Chat({ open, onClose, userId }: ChatProps) {
         if (analyserRef.current) {
           const data = new Uint8Array(analyserRef.current.frequencyBinCount);
           analyserRef.current.getByteFrequencyData(data);
-          const count = 28;
-          const usable = Math.floor(data.length * 0.75);
-          const binWidth = Math.floor(usable / count);
-          setWaveformBars(
-            Array.from({ length: count }, (_, i) => {
-              let sum = 0;
-              for (let j = 0; j < binWidth; j++) sum += data[i * binWidth + j];
-              return Math.max(0.06, sum / binWidth / 255);
-            })
-          );
+          setWaveformBars(buildCenteredBars(data, 28));
         }
         rafRef.current = requestAnimationFrame(tick);
       };
       rafRef.current = requestAnimationFrame(tick);
+
+      startSpeechRecognition();
     }
   };
 
   const submitRecording = () => {
+    stopSpeechRecognition();
     if (rafRef.current) {
       cancelAnimationFrame(rafRef.current);
       rafRef.current = null;
@@ -359,11 +417,11 @@ export default function Chat({ open, onClose, userId }: ChatProps) {
                   exit={{ opacity: 0 }}
                   className="flex flex-1 flex-col px-6 pb-10"
                 >
-                  {/* Spacer */}
+                  {/* Top spacer */}
                   <div className="flex-1" />
 
-                  {/* Waveform – centered above text */}
-                  <div className="mb-6 flex items-center justify-center gap-[4px]">
+                  {/* Waveform – fixed-height row so siblings don't shift as bars pulse */}
+                  <div className="mb-6 flex h-24 items-center justify-center gap-[5px]">
                     {waveformBars.map((h, i) => (
                       <motion.div
                         key={i}
@@ -372,18 +430,18 @@ export default function Chat({ open, onClose, userId }: ChatProps) {
                         animate={{
                           height: state === "paused"
                             ? "6px"
-                            : `${Math.max(6, h * 64)}px`,
+                            : `${Math.max(6, h * 80)}px`,
                           opacity: state === "paused"
                             ? 0.3
                             : 0.5 + h * 0.5,
                         }}
-                        transition={{ duration: 0.15, ease: "easeOut" }}
+                        transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
                       />
                     ))}
                   </div>
 
                   {/* Status text */}
-                  <div className="mb-8 text-center">
+                  <div className="mb-4 text-center">
                     <p className="text-body leading-body font-semibold text-text-strong">
                       {state === "paused" ? "Paused" : "Listening..."}
                     </p>
@@ -393,6 +451,9 @@ export default function Chat({ open, onClose, userId }: ChatProps) {
                         : "Say everything you need to get done."}
                     </p>
                   </div>
+
+                  {/* Bottom spacer (smaller — keeps content lower in the sheet but buttons pinned) */}
+                  <div className="flex-[0.5]" />
 
                   {/* Bottom bar: pause/resume, submit, chat */}
                   <div className="flex items-center justify-center gap-6">
@@ -559,8 +620,8 @@ export default function Chat({ open, onClose, userId }: ChatProps) {
                               initial={{ opacity: 0, y: 12 }}
                               animate={{ opacity: 1, y: 0 }}
                               transition={{ delay: idx * 0.08 }}
-                              className="flex items-center rounded-[2px] py-[14px] pl-[16px] pr-[12px]"
-                              style={{ backgroundColor: "#F7F7F7", borderLeft: "3px solid #6F8F7A" }}
+                              className="flex items-center rounded-[10px] py-[14px] pl-[16px] pr-[12px]"
+                              style={{ backgroundColor: "#F7F7F7", border: "1px solid rgba(111,143,122,0.05)", boxShadow: "0 0 0 1px #F4F3EF" }}
                             >
                               <div className="flex-1 min-w-0">
                                 <p className="text-caption leading-caption text-text-secondary">
@@ -607,10 +668,10 @@ export default function Chat({ open, onClose, userId }: ChatProps) {
                               transition={{ delay: (parsedTasks.length + idx) * 0.08 }}
                             >
                               <div
-                                className="flex items-center rounded-[2px] py-[14px] pl-[16px] pr-[12px]"
+                                className="flex items-center rounded-[10px] py-[14px] pl-[16px] pr-[12px]"
                                 style={{
                                   backgroundColor: conflict ? "#FEF3C7" : "#F7F7F7",
-                                  borderLeft: conflict ? "3px solid #F4B400" : "3px solid #6F8F7A",
+                                  border: "1px solid rgba(111,143,122,0.05)", boxShadow: "0 0 0 1px #F4F3EF",
                                 }}
                               >
                                 <div className="flex-1 min-w-0">
@@ -856,9 +917,12 @@ export default function Chat({ open, onClose, userId }: ChatProps) {
                             initial={{ opacity: 0, y: 12 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: idx * 0.08 }}
-                            className="flex items-center rounded-[2px] py-[14px] pl-[16px] pr-[12px]"
-                            style={{ backgroundColor: "#F7F7F7", borderLeft: "3px solid #6F8F7A" }}
+                            className="flex items-center gap-3 rounded-xl py-[12px] pl-[12px] pr-[12px]"
+                            style={{ backgroundColor: "#FFFFFF", border: "1px solid rgba(111,143,122,0.05)", boxShadow: "0 0 0 1px #F4F3EF" }}
                           >
+                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg" style={{ backgroundColor: "#F0F5F2", border: "1px solid rgba(111,143,122,0.18)" }}>
+                              <CheckSquare size={16} color="#6F8F7A" strokeWidth={1.75} />
+                            </div>
                             <div className="flex-1 min-w-0">
                               <p className="text-caption leading-caption text-text-secondary">
                                 Due {new Date(task.dueDate + "T00:00:00").toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "numeric" })}
@@ -906,10 +970,10 @@ export default function Chat({ open, onClose, userId }: ChatProps) {
                             transition={{ delay: (parsedTasks.length + idx) * 0.08 }}
                           >
                             <div
-                              className="flex items-center rounded-[2px] py-[14px] pl-[16px] pr-[12px]"
+                              className="flex items-center rounded-xl py-[14px] pl-[16px] pr-[12px]"
                               style={{
-                                backgroundColor: conflict ? "#FEF3C7" : "#F7F7F7",
-                                borderLeft: conflict ? "3px solid #F4B400" : "3px solid #6F8F7A",
+                                backgroundColor: "#FFFFFF",
+                                border: "1px solid rgba(111,143,122,0.05)", boxShadow: "0 0 0 1px #F4F3EF",
                               }}
                             >
                               <div className="flex-1 min-w-0">
